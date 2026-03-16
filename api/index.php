@@ -20,52 +20,45 @@ foreach ($dirs as $dir) {
 
 // Build /tmp/.env from Vercel environment variables so Laravel can boot
 // without a committed .env file.
+// Always regenerate so new Vercel env vars are picked up immediately.
 $envFile = '/tmp/.env';
-if (!file_exists($envFile)) {
-    $lines = [];
 
-    // Merge $_ENV and $_SERVER to catch all injected env vars
-    $envVars = array_merge($_SERVER, $_ENV);
+$lines = [];
 
-    foreach ($envVars as $key => $value) {
-        // Only write UPPER_SNAKE_CASE keys (skip HTTP_*, SERVER_* etc.)
-        if (!preg_match('/^[A-Z][A-Z0-9_]+$/', $key)) {
-            continue;
-        }
-        // Quote the value if it contains anything that dotenv may misparse
-        if (preg_match('/[\s"\'\\\\#&$!|<>]/', (string) $value)) {
-            $value = '"' . addslashes($value) . '"';
-        }
-        $lines[] = $key . '=' . $value;
+// Merge $_ENV and $_SERVER to catch all injected env vars
+$envVars = array_merge($_SERVER, $_ENV);
+
+foreach ($envVars as $key => $value) {
+    // Only write UPPER_SNAKE_CASE keys (skip HTTP_*, SERVER_* etc.)
+    if (!preg_match('/^[A-Z][A-Z0-9_]+$/', $key)) {
+        continue;
     }
-
-    // Safe defaults for drivers that don't work on a read-only serverless FS
-    $defaults = [
-        'APP_ENV'           => 'production',
-        'APP_DEBUG'         => 'false',
-        'LOG_CHANNEL'       => 'stderr',
-        'SESSION_DRIVER'    => 'cookie',
-        'CACHE_STORE'       => 'array',
-        'QUEUE_CONNECTION'  => 'sync',
-        'FILESYSTEM_DISK'   => 'local',
-        'BROADCAST_CONNECTION' => 'log',
-    ];
-    foreach ($defaults as $key => $default) {
-        // Only apply default if the key was not already set by Vercel env vars
-        $alreadySet = false;
-        foreach ($lines as $line) {
-            if (str_starts_with($line, $key . '=')) {
-                $alreadySet = true;
-                break;
-            }
-        }
-        if (!$alreadySet) {
-            $lines[] = $key . '=' . $default;
-        }
+    // Quote values that contain characters dotenv may misparse
+    if (preg_match('/[\s"\'\\\\#&$!|<>]/', (string) $value)) {
+        $value = '"' . addslashes($value) . '"';
     }
-
-    file_put_contents($envFile, implode("\n", $lines) . "\n");
+    $lines[] = $key . '=' . $value;
 }
+
+// Safe serverless defaults (only applied if not already set by Vercel env vars)
+$defaults = [
+    'APP_ENV'              => 'production',
+    'APP_DEBUG'            => 'false',
+    'LOG_CHANNEL'          => 'stderr',
+    'SESSION_DRIVER'       => 'cookie',
+    'CACHE_STORE'          => 'array',
+    'QUEUE_CONNECTION'     => 'sync',
+    'FILESYSTEM_DISK'      => 'local',
+    'BROADCAST_CONNECTION' => 'log',
+];
+$writtenKeys = array_map(fn($l) => explode('=', $l, 2)[0], $lines);
+foreach ($defaults as $key => $default) {
+    if (!in_array($key, $writtenKeys, true)) {
+        $lines[] = $key . '=' . $default;
+    }
+}
+
+file_put_contents($envFile, implode("\n", $lines) . "\n");
 
 require __DIR__ . '/../vendor/autoload.php';
 
