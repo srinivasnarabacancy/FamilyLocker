@@ -30,7 +30,7 @@ class TaskController extends BaseApiController
             });
         }
 
-        return $this->successResponse($query->orderBy('due_date')->orderByRaw("FIELD(priority,'urgent','high','medium','low')")->paginate(20));
+        return $this->successResponse($query->orderBy('due_date')->orderByRaw("CASE priority WHEN 'urgent' THEN 1 WHEN 'high' THEN 2 WHEN 'medium' THEN 3 WHEN 'low' THEN 4 ELSE 5 END")->paginate(20));
     }
 
     public function store(Request $request): JsonResponse

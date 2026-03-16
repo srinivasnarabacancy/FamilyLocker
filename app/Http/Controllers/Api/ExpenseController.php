@@ -139,9 +139,9 @@ class ExpenseController extends BaseApiController
             ->get();
 
         $monthlyTrend = Expense::where('family_id', $familyId)
-            ->selectRaw('YEAR(date) as year, MONTH(date) as month, SUM(amount) as total')
-            ->groupByRaw('YEAR(date), MONTH(date)')
-            ->orderByRaw('YEAR(date) DESC, MONTH(date) DESC')
+            ->selectRaw('EXTRACT(YEAR FROM "date") as year, EXTRACT(MONTH FROM "date") as month, SUM(amount) as total')
+            ->groupByRaw('EXTRACT(YEAR FROM "date"), EXTRACT(MONTH FROM "date")')
+            ->orderByRaw('EXTRACT(YEAR FROM "date") DESC, EXTRACT(MONTH FROM "date") DESC')
             ->limit(12)
             ->get();
 

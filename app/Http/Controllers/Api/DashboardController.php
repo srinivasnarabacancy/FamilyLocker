@@ -81,7 +81,7 @@ class DashboardController extends BaseApiController
         $pendingTasks = Task::where('family_id', $familyId)
             ->whereIn('status', ['pending', 'in_progress'])
             ->with(['assignee'])
-            ->orderByRaw("FIELD(priority,'urgent','high','medium','low')")
+            ->orderByRaw("CASE priority WHEN 'urgent' THEN 1 WHEN 'high' THEN 2 WHEN 'medium' THEN 3 WHEN 'low' THEN 4 ELSE 5 END")
             ->limit(5)
             ->get();
 
@@ -96,9 +96,9 @@ class DashboardController extends BaseApiController
 
         // Monthly expense chart (last 6 months)
         $monthlyExpenses = Expense::where('family_id', $familyId)
-            ->selectRaw('YEAR(date) as year, MONTH(date) as month, SUM(amount) as total')
-            ->groupByRaw('YEAR(date), MONTH(date)')
-            ->orderByRaw('YEAR(date) DESC, MONTH(date) DESC')
+            ->selectRaw('EXTRACT(YEAR FROM "date") as year, EXTRACT(MONTH FROM "date") as month, SUM(amount) as total')
+            ->groupByRaw('EXTRACT(YEAR FROM "date"), EXTRACT(MONTH FROM "date")')
+            ->orderByRaw('EXTRACT(YEAR FROM "date") DESC, EXTRACT(MONTH FROM "date") DESC')
             ->limit(6)
             ->get()
             ->reverse()
