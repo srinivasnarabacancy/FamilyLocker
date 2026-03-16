@@ -24,7 +24,7 @@
       </button>
     </div>
 
-    <div v-if="store.loading" class="page-loader"><div class="spinner-border" /></div>
+    <ShimmerLoader v-if="store.loading" variant="cards" col-class="col-12 col-sm-6 col-lg-4" :count="6" />
 
     <div v-else-if="store.bills.length" class="row g-3">
       <div
@@ -155,6 +155,7 @@ import { reactive, ref, computed, onMounted } from 'vue'
 import { Modal } from 'bootstrap'
 import { useBillStore } from '@/stores/bills'
 import { useToast } from '@/composables/useToast'
+import ShimmerLoader from '@/components/ShimmerLoader.vue'
 
 const store = useBillStore()
 const { showToast } = useToast()

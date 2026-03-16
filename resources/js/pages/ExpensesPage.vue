@@ -58,9 +58,7 @@
 
     <!-- Table -->
     <div class="fl-card overflow-hidden">
-      <div v-if="store.loading" class="page-loader">
-        <div class="spinner-border" />
-      </div>
+      <ShimmerLoader v-if="store.loading" variant="table" :count="6" :cols="5" />
       <div v-else-if="store.expenses.length" class="table-responsive">
         <table class="table mb-0">
           <thead>
@@ -176,6 +174,7 @@ import { Doughnut } from 'vue-chartjs'
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js'
 import { useExpenseStore } from '@/stores/expenses'
 import { useToast } from '@/composables/useToast'
+import ShimmerLoader from '@/components/ShimmerLoader.vue'
 
 ChartJS.register(ArcElement, Tooltip, Legend)
 

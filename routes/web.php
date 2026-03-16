@@ -38,9 +38,9 @@ Route::middleware('auth')->group(function () use ($renderPage): void {
     Route::post('/email/verification-notification', [InertiaAuthController::class, 'resendVerification'])
         ->middleware('throttle:6,1')
         ->name('verification.send');
-    Route::get('/email/verify/{id}/{hash}', [InertiaAuthController::class, 'verifyEmail'])
-        ->middleware(['signed', 'throttle:6,1'])
-        ->name('verification.verify');
+    Route::post('/email/verify-otp', [InertiaAuthController::class, 'verifyOtp'])
+        ->middleware('throttle:10,1')
+        ->name('verification.verify-otp');
     Route::post('/logout', [InertiaAuthController::class, 'logout'])->name('logout');
 
     Route::middleware('verified')->prefix('app')->group(function () use ($renderPage): void {

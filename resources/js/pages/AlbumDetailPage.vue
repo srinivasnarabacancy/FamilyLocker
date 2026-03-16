@@ -30,7 +30,7 @@
       Uploading photos...
     </div>
 
-    <div v-if="loading" class="page-loader"><div class="spinner-border" /></div>
+    <ShimmerLoader v-if="loading" variant="photos" :count="9" />
 
     <div v-else-if="store.currentAlbum?.photos?.length" class="photo-grid">
       <div
@@ -90,6 +90,7 @@ import { ref, onMounted } from 'vue'
 import { router } from '@inertiajs/vue3'
 import { useAlbumStore } from '@/stores/albums'
 import { useToast } from '@/composables/useToast'
+import ShimmerLoader from '@/components/ShimmerLoader.vue'
 
 const props = defineProps({
   albumId: {

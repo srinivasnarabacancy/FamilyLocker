@@ -1,21 +1,41 @@
 <template>
-  <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index:9999">
-    <div
-      v-for="toast in toasts"
-      :key="toast.id"
-      class="toast show align-items-center text-white border-0"
-      :class="`bg-${toast.type === 'success' ? 'success' : toast.type === 'danger' ? 'danger' : 'info'}`"
-      role="alert"
-    >
-      <div class="d-flex">
-        <div class="toast-body fw-semibold">
-          <i class="bi me-2" :class="toast.type === 'success' ? 'bi-check-circle' : toast.type === 'danger' ? 'bi-x-circle' : 'bi-info-circle'" />
-          {{ toast.message }}
+  <Teleport to="body">
+    <div class="fl-toast-container">
+      <TransitionGroup name="fl-toast" tag="div">
+        <div
+          v-for="toast in toasts"
+          :key="toast.id"
+          class="fl-toast"
+          :class="`fl-toast--${toast.type}`"
+          role="alert"
+        >
+          <!-- Icon -->
+          <div class="fl-toast__icon">
+            <i class="bi" :class="toastIcon(toast.type)" />
+          </div>
+
+          <!-- Content -->
+          <div class="fl-toast__body">
+            <div class="fl-toast__title">{{ toastTitle(toast.type) }}</div>
+            <div class="fl-toast__message">{{ toast.message }}</div>
+          </div>
+
+          <!-- Close -->
+          <button class="fl-toast__close" @click="removeToast(toast.id)" aria-label="Dismiss">
+            <i class="bi bi-x-lg" />
+          </button>
+
+          <!-- Progress bar -->
+          <div class="fl-toast__progress">
+            <div
+              class="fl-toast__progress-bar"
+              :style="{ animationDuration: toast.duration + 'ms' }"
+            />
+          </div>
         </div>
-        <button type="button" class="btn-close btn-close-white me-2 m-auto" @click="removeToast(toast.id)" />
-      </div>
+      </TransitionGroup>
     </div>
-  </div>
+  </Teleport>
 </template>
 
 <script setup>
@@ -26,15 +46,29 @@ import { useToast } from '@/composables/useToast'
 const page = usePage()
 const { toasts, showToast, removeToast } = useToast()
 
+function toastIcon(type) {
+  return {
+    success: 'bi-check-circle-fill',
+    danger: 'bi-x-circle-fill',
+    warning: 'bi-exclamation-triangle-fill',
+    info: 'bi-info-circle-fill',
+  }[type] ?? 'bi-info-circle-fill'
+}
+
+function toastTitle(type) {
+  return {
+    success: 'Success',
+    danger: 'Error',
+    warning: 'Warning',
+    info: 'Info',
+  }[type] ?? 'Notice'
+}
+
 watch(() => page.props.flash?.success, (message) => {
-  if (message) {
-    showToast(message, 'success')
-  }
+  if (message) showToast(message, 'success')
 }, { immediate: true })
 
 watch(() => page.props.flash?.error, (message) => {
-  if (message) {
-    showToast(message, 'danger')
-  }
+  if (message) showToast(message, 'danger')
 }, { immediate: true })
 </script>

@@ -18,9 +18,7 @@
     </div>
 
     <!-- Stats Grid -->
-    <div v-if="loading" class="page-loader">
-      <div class="spinner-border" role="status" />
-    </div>
+    <ShimmerLoader v-if="loading" variant="dashboard" />
 
     <template v-else-if="dashData">
       <!-- Stat Cards Row 1 -->
@@ -250,6 +248,7 @@ import { Link, usePage } from '@inertiajs/vue3'
 import { Bar } from 'vue-chartjs'
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js'
 import { useDashboardStore } from '@/stores/dashboard'
+import ShimmerLoader from '@/components/ShimmerLoader.vue'
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 

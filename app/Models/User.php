@@ -2,19 +2,19 @@
 
 namespace App\Models;
 
-use Illuminate\Auth\MustVerifyEmail as MustVerifyEmailTrait;
-use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Laravel\Sanctum\HasApiTokens;
+use App\Mail\EmailOtpMail;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, HasApiTokens, MustVerifyEmailTrait;
+    use HasFactory, Notifiable, HasApiTokens;
 
     public const ROLE_OWNER = 'owner';
     public const ROLE_ADMIN = 'admin';
@@ -60,6 +60,8 @@ class User extends Authenticatable implements MustVerifyEmail
         'phone',
         'date_of_birth',
         'relation',
+        'otp_code',
+        'otp_expires_at',
     ];
 
     /**
@@ -81,8 +83,9 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return [
             'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-            'date_of_birth' => 'date',
+            'otp_expires_at'    => 'datetime',
+            'password'          => 'hashed',
+            'date_of_birth'     => 'date',
         ];
     }
 
@@ -130,12 +133,44 @@ class User extends Authenticatable implements MustVerifyEmail
         return blank($this->email) || ! is_null($this->email_verified_at);
     }
 
-    public function sendEmailVerificationNotification(): void
+    public function markEmailAsVerified(): bool
+    {
+        return $this->forceFill([
+            'email_verified_at' => $this->freshTimestamp(),
+            'otp_code'          => null,
+            'otp_expires_at'    => null,
+        ])->save();
+    }
+
+    public function generateAndSendOtp(): void
     {
         if (blank($this->email) || $this->hasVerifiedEmail()) {
             return;
         }
 
-        $this->notify(new VerifyEmail());
+        $otp = (string) random_int(100000, 999999);
+
+        $this->forceFill([
+            'otp_code'       => $otp,
+            'otp_expires_at' => now()->addMinutes(10),
+        ])->save();
+
+        Mail::to($this->email)->send(new EmailOtpMail($otp, $this->name));
+    }
+
+    public function verifyOtp(string $code): bool
+    {
+        if (
+            blank($this->otp_code) ||
+            $this->otp_code !== $code ||
+            ! $this->otp_expires_at ||
+            now()->isAfter($this->otp_expires_at)
+        ) {
+            return false;
+        }
+
+        $this->markEmailAsVerified();
+
+        return true;
     }
 }

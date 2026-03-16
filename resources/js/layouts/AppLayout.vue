@@ -10,13 +10,24 @@
 
     <!-- Sidebar -->
     <aside class="sidebar" :class="{ open: sidebarOpen }">
+      <!-- Brand -->
       <div class="sidebar__brand">
-        <div class="brand-logo">🏠</div>
-        <span class="brand-name">FamilyLocker</span>
+        <div class="brand-logo-wrap">
+          <div class="brand-logo">🏠</div>
+          <div class="brand-glow" />
+        </div>
+        <div class="brand-text">
+          <span class="brand-name">FamilyLocker</span>
+          <span class="brand-tagline">Family Workspace</span>
+        </div>
+        <button class="sidebar-close d-lg-none" @click="sidebarOpen = false">
+          <i class="bi bi-x-lg" />
+        </button>
       </div>
 
+      <!-- Nav -->
       <nav class="sidebar__nav">
-        <span class="nav-section-title">Main</span>
+        <span class="nav-section-title">Main Menu</span>
         <Link
           v-for="item in mainNavItems"
           :key="item.href"
@@ -25,19 +36,22 @@
           :class="{ active: isActive(item.components) }"
           @click="sidebarOpen = false"
         >
-          <i :class="item.icon" />
-          <span>{{ item.label }}</span>
+          <span class="nav-icon"><i :class="item.icon" /></span>
+          <span class="nav-label">{{ item.label }}</span>
+          <span v-if="isActive(item.components)" class="nav-active-dot" />
         </Link>
 
-        <span class="nav-section-title mt-2">Account</span>
+        <div class="nav-divider" />
+        <span class="nav-section-title">Account</span>
         <Link
           href="/app/family"
           class="nav-link"
           :class="{ active: isActive(['FamilyPage']) }"
           @click="sidebarOpen = false"
         >
-          <i class="bi bi-people" />
-          <span>Family</span>
+          <span class="nav-icon"><i class="bi bi-people" /></span>
+          <span class="nav-label">Family</span>
+          <span v-if="isActive(['FamilyPage'])" class="nav-active-dot" />
         </Link>
         <Link
           href="/app/profile"
@@ -45,16 +59,26 @@
           :class="{ active: isActive(['ProfilePage']) }"
           @click="sidebarOpen = false"
         >
-          <i class="bi bi-person-circle" />
-          <span>Profile</span>
+          <span class="nav-icon"><i class="bi bi-person-circle" /></span>
+          <span class="nav-label">Profile</span>
+          <span v-if="isActive(['ProfilePage'])" class="nav-active-dot" />
         </Link>
       </nav>
 
+      <!-- User Profile Footer -->
       <div class="sidebar__footer">
-        <button class="btn btn-sm btn-outline-danger w-100" @click="handleLogout">
-          <i class="bi bi-box-arrow-left me-2" />
-          Logout
-        </button>
+        <div class="sidebar-user">
+          <div class="sidebar-user__avatar">
+            {{ userInitials }}
+          </div>
+          <div class="sidebar-user__info">
+            <div class="sidebar-user__name">{{ user?.name }}</div>
+            <div class="sidebar-user__role">{{ formatRoleLabel(user?.role) }}</div>
+          </div>
+          <button class="sidebar-user__logout" title="Logout" @click="handleLogout">
+            <i class="bi bi-box-arrow-right" />
+          </button>
+        </div>
       </div>
     </aside>
 
@@ -62,7 +86,7 @@
     <div class="main-content">
       <!-- Topbar -->
       <header class="main-content__topbar">
-        <div class="d-flex align-items-center gap-3">
+        <div class="topbar-left">
           <button
             class="btn btn-icon btn-light d-lg-none"
             @click="sidebarOpen = !sidebarOpen"
@@ -70,28 +94,18 @@
             <i class="bi bi-list fs-5" />
           </button>
           <div>
-            <h6 class="mb-0 fw-bold text-dark">{{ currentPageTitle }}</h6>
-            <small class="text-muted" v-if="user?.family?.name">
+            <p class="topbar-title">{{ currentPageTitle }}</p>
+            <p class="topbar-subtitle" v-if="user?.family?.name">
               {{ user.family.name }}
-            </small>
+            </p>
           </div>
         </div>
 
         <div class="d-flex align-items-center gap-2">
-          <!-- User avatar -->
-          <div class="d-flex align-items-center gap-2">
-            <div
-              class="rounded-circle bg-primary d-flex align-items-center justify-content-center text-white fw-bold"
-              style="width:36px;height:36px;font-size:0.875rem;"
-            >
-              {{ userInitials }}
-            </div>
-            <div class="d-none d-sm-block">
-              <div class="fw-semibold small text-dark lh-1">{{ user?.name }}</div>
-              <div class="text-muted" style="font-size:0.72rem">
-                {{ formatRoleLabel(user?.role) }}
-              </div>
-            </div>
+          <div class="topbar-avatar">{{ userInitials }}</div>
+          <div class="d-none d-sm-block">
+            <div class="topbar-user-name">{{ user?.name }}</div>
+            <div class="topbar-user-role">{{ formatRoleLabel(user?.role) }}</div>
           </div>
         </div>
       </header>
@@ -103,6 +117,19 @@
     </div>
 
     <ToastContainer />
+
+    <!-- Logout Confirmation Modal -->
+    <ConfirmModal
+      v-model="showLogoutModal"
+      title="Are you sure you want to log out?"
+      message="You'll need to log in again to access your account."
+      confirm-text="Logout"
+      cancel-text="Cancel"
+      icon="bi bi-box-arrow-right"
+      variant="danger"
+      :loading="loggingOut"
+      @confirm="confirmLogout"
+    />
   </div>
 </template>
 
@@ -111,6 +138,7 @@ import { ref, computed } from 'vue'
 import { Link, router, usePage } from '@inertiajs/vue3'
 import CsrfMetaSync from '@/components/CsrfMetaSync.vue'
 import ToastContainer from '@/components/ToastContainer.vue'
+import ConfirmModal from '@/components/ConfirmModal.vue'
 import { formatRoleLabel } from '@/constants/roles'
 
 const page = usePage()
@@ -143,7 +171,15 @@ function isActive(components) {
   return components.includes(page.component)
 }
 
-async function handleLogout() {
+const showLogoutModal = ref(false)
+const loggingOut = ref(false)
+
+function handleLogout() {
+  showLogoutModal.value = true
+}
+
+async function confirmLogout() {
+  loggingOut.value = true
   localStorage.removeItem('auth_token')
   router.post('/logout', {
     _token: page.props.csrf_token,

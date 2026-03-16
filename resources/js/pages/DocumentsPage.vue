@@ -37,9 +37,7 @@
     </div>
 
     <!-- Documents Grid -->
-    <div v-if="store.loading" class="page-loader">
-      <div class="spinner-border" />
-    </div>
+    <ShimmerLoader v-if="store.loading" variant="cards" col-class="col-12 col-sm-6 col-lg-4 col-xl-3" :count="8" />
 
     <div v-else-if="store.documents.length" class="row g-3">
       <div
@@ -182,6 +180,7 @@ import { reactive, ref, onMounted } from 'vue'
 import { Modal } from 'bootstrap'
 import { useDocumentStore } from '@/stores/documents'
 import { useToast } from '@/composables/useToast'
+import ShimmerLoader from '@/components/ShimmerLoader.vue'
 
 const store = useDocumentStore()
 const { showToast } = useToast()

@@ -44,7 +44,7 @@
     </div>
 
     <!-- Kanban-style columns for mobile -->
-    <div v-if="store.loading" class="page-loader"><div class="spinner-border" /></div>
+    <ShimmerLoader v-if="store.loading" variant="table" :count="6" :cols="5" />
 
     <div v-else-if="store.tasks.length">
       <!-- Table view for larger screens -->
@@ -227,6 +227,7 @@ import { reactive, ref, onMounted } from 'vue'
 import { Modal } from 'bootstrap'
 import { useTaskStore } from '@/stores/tasks'
 import { useToast } from '@/composables/useToast'
+import ShimmerLoader from '@/components/ShimmerLoader.vue'
 import api from '@/services/api'
 
 const store = useTaskStore()

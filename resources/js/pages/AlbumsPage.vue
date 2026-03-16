@@ -10,7 +10,7 @@
       </button>
     </div>
 
-    <div v-if="store.loading" class="page-loader"><div class="spinner-border" /></div>
+    <ShimmerLoader v-if="store.loading" variant="cards" col-class="col-12 col-sm-6 col-md-4 col-xl-3" :count="8" />
 
     <div v-else-if="store.albums.length" class="row g-3">
       <div
@@ -110,6 +110,7 @@ import { router } from '@inertiajs/vue3'
 import { Modal } from 'bootstrap'
 import { useAlbumStore } from '@/stores/albums'
 import { useToast } from '@/composables/useToast'
+import ShimmerLoader from '@/components/ShimmerLoader.vue'
 
 const store = useAlbumStore()
 const { showToast } = useToast()

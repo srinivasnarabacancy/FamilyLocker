@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\Family;
 use App\Models\User;
-use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -71,15 +70,15 @@ class InertiaAuthController extends Controller
         $request->session()->regenerate();
 
         try {
-            $this->sendVerificationEmail($user);
+            $this->sendOtp($user);
 
             return to_route('verification.notice')
-                ->with('success', 'Account created. Check your email for a verification link before continuing.');
+                ->with('success', 'Account created. We sent a 6-digit code to your email.');
         } catch (Throwable $e) {
             report($e);
 
             return to_route('verification.notice')
-                ->with('error', 'Account created, but we could not send the verification email. Please request a new one.');
+                ->with('error', 'Account created, but we could not send the OTP. Please request a new one.');
         }
     }
 
@@ -102,31 +101,43 @@ class InertiaAuthController extends Controller
         }
 
         try {
-            $this->sendVerificationEmail($user);
+            $this->sendOtp($user);
 
-            return back()->with('success', 'A fresh verification link has been sent to your email address.');
+            return back()->with('success', 'A new 6-digit code has been sent to your email address.');
         } catch (Throwable $e) {
             report($e);
 
-            return back()->with('error', 'We could not send the verification email right now. Please try again in a moment.');
+            return back()->with('error', 'We could not send the OTP right now. Please try again in a moment.');
         }
     }
 
-    public function verifyEmail(EmailVerificationRequest $request): RedirectResponse
+    public function verifyOtp(Request $request): RedirectResponse
     {
-        if (!$request->user()?->hasVerifiedEmail()) {
-            $request->fulfill();
+        $request->validate([
+            'otp' => ['required', 'string', 'size:6'],
+        ]);
+
+        $user = $request->user();
+
+        if ($user?->hasVerifiedEmail()) {
+            return to_route('dashboard')->with('success', 'Email already verified.');
         }
 
-        return to_route('dashboard')->with('success', 'Email verified successfully.');
+        if (! $user?->verifyOtp($request->input('otp'))) {
+            throw ValidationException::withMessages([
+                'otp' => 'The code is invalid or has expired. Please request a new one.',
+            ]);
+        }
+
+        return to_route('dashboard')->with('success', 'Email verified successfully. Welcome to FamilyLocker!');
     }
 
-    private function sendVerificationEmail(?User $user): void
+    private function sendOtp(?User $user): void
     {
         if (!$user || blank($user->email) || $user->hasVerifiedEmail()) {
             return;
         }
 
-        $user->sendEmailVerificationNotification();
+        $user->generateAndSendOtp();
     }
 }

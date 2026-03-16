@@ -34,7 +34,7 @@
           <i class="bi bi-plus-lg me-2" />Add Record
         </button>
       </div>
-      <div v-if="store.loading" class="page-loader"><div class="spinner-border" /></div>
+      <ShimmerLoader v-if="store.loading" variant="medical" :count="6" />
       <div v-else-if="store.records.length" class="row g-3">
         <div v-for="rec in store.records" :key="rec.id" class="col-12 col-sm-6 col-lg-4">
           <div class="fl-card p-3">
@@ -364,6 +364,7 @@ import { reactive, ref, onMounted } from 'vue'
 import { Modal } from 'bootstrap'
 import { useMedicalStore } from '@/stores/medical'
 import { useToast } from '@/composables/useToast'
+import ShimmerLoader from '@/components/ShimmerLoader.vue'
 
 const store = useMedicalStore()
 const { showToast } = useToast()
