@@ -1,13 +1,14 @@
 {
     "version": 2,
     "framework": null,
-    "buildCommand": "curl -sS https://getcomposer.org/installer | php && php composer.phar install --no-dev --optimize-autoloader && npm run build",
+    "buildCommand": "npm run build",
     "installCommand": "npm install",
     "outputDirectory": "public",
     "functions": {
         "api/index.php": {
             "runtime": "vercel-php@0.7.2",
-            "maxDuration": 30
+            "maxDuration": 30,
+            "composerInstall": true
         }
     },
     "routes": [
