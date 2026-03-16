@@ -32,8 +32,8 @@ if (!file_exists($envFile)) {
         if (!preg_match('/^[A-Z][A-Z0-9_]+$/', $key)) {
             continue;
         }
-        // Quote the value if it contains spaces or special characters
-        if (preg_match('/[\s"\'\\\\]/', (string) $value)) {
+        // Quote the value if it contains anything that dotenv may misparse
+        if (preg_match('/[\s"\'\\\\#&$!|<>]/', (string) $value)) {
             $value = '"' . addslashes($value) . '"';
         }
         $lines[] = $key . '=' . $value;
