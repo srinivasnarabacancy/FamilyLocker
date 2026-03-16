@@ -118,7 +118,6 @@
       </form>
 
       <template #footer>
-        <button type="button" class="btn btn-light" @click="showInviteOffcanvas = false">Cancel</button>
         <button type="submit" form="inviteForm" class="btn btn-primary" :disabled="inviteLoading">
           <span v-if="inviteLoading" class="spinner-border spinner-border-sm me-2" />
           {{ inviteActionLabel }}
@@ -190,7 +189,6 @@
       </form>
 
       <template #footer>
-        <button type="button" class="btn btn-light" @click="showEditOffcanvas = false">Cancel</button>
         <button type="submit" form="editMemberForm" class="btn btn-primary" :disabled="editLoading">
           <span v-if="editLoading" class="spinner-border spinner-border-sm me-2" />
           Save Changes

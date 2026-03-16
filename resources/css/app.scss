@@ -839,34 +839,15 @@ body {
     align-items: flex-start;
     justify-content: space-between;
     gap: 1rem;
-    padding: 1.5rem 1.5rem 1.25rem;
+    padding: 1.75rem 1.75rem 1.5rem;
     border-bottom: 1px solid #eef0f7;
     flex-shrink: 0;
   }
 
-  &__header-left {
-    display: flex;
-    align-items: center;
-    gap: 0.875rem;
-  }
-
-  &__icon {
-    width: 44px;
-    height: 44px;
-    border-radius: 12px;
-    background: linear-gradient(135deg, rgba(108,92,231,0.12) 0%, rgba(108,92,231,0.06) 100%);
-    color: var(--fl-primary);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.15rem;
-    flex-shrink: 0;
-  }
-
   &__title {
-    font-size: 1.05rem;
+    font-size: 1.35rem;
     font-weight: 700;
-    color: var(--fl-dark);
+    color: #1a1a2e;
     margin: 0;
     line-height: 1.3;
   }
@@ -874,47 +855,49 @@ body {
   &__subtitle {
     font-size: 0.8rem;
     color: #8a94a6;
-    margin: 0.2rem 0 0;
+    margin: 0.3rem 0 0;
   }
 
   &__close {
-    width: 34px;
-    height: 34px;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #f3f4f6;
+    background: transparent;
     border: none;
-    border-radius: 10px;
-    color: #6b7280;
-    font-size: 0.85rem;
+    color: #374151;
+    font-size: 1.25rem;
+    line-height: 1;
     cursor: pointer;
     flex-shrink: 0;
-    transition: var(--fl-transition);
+    padding: 0.1rem 0.25rem;
+    transition: color 0.15s ease;
+    margin-top: 0.1rem;
 
     &:hover {
-      background: #e5e7eb;
-      color: var(--fl-dark);
+      color: #111;
     }
   }
 
   &__body {
     flex: 1;
     overflow-y: auto;
-    padding: 1.5rem;
+    padding: 1.75rem;
   }
 
   &__footer {
     display: flex;
-    align-items: center;
-    justify-content: flex-end;
+    flex-direction: column;
     gap: 0.625rem;
-    padding: 1rem 1.5rem;
+    padding: 1.25rem 1.75rem;
     border-top: 1px solid #eef0f7;
     flex-shrink: 0;
-    background: #fafbff;
+    background: #fff;
 
-    .btn { min-width: 100px; }
+    .btn {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      font-size: 0.95rem;
+    }
   }
 }
 

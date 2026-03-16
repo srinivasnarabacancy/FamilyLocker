@@ -35,19 +35,19 @@
 
           <div class="mb-4">
             <label class="form-label fw-semibold">Password</label>
-            <div class="input-group input-icon-wrap">
+            <div class="input-icon-wrap">
               <i class="bi bi-lock input-icon"></i>
               <input
                 v-model="form.password"
                 :type="showPassword ? 'text' : 'password'"
-                class="form-control form-control-lg ps-5"
+                class="form-control form-control-lg ps-5 pe-5"
                 :class="{ 'is-invalid': form.errors.password }"
                 placeholder="Enter your password"
                 required
               />
               <button
                 type="button"
-                class="btn btn-outline-secondary"
+                class="password-toggle"
                 @click="showPassword = !showPassword"
                 tabindex="-1"
               >
@@ -101,3 +101,94 @@ async function handleLogin() {
     })
 }
 </script>
+
+<style scoped>
+/* ── Input wrapper ──────────────────────────────────── */
+.input-icon-wrap {
+  position: relative;
+}
+
+/* Icon anchored to the left */
+.input-icon-wrap .input-icon {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #a0aec0;
+  font-size: 1rem;
+  z-index: 5;
+  pointer-events: none;
+  transition: color 0.2s ease;
+}
+
+/* Float the eye-toggle inside the right edge */
+.password-toggle {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 5;
+  background: transparent;
+  border: none;
+  padding: 0.25rem 0.4rem;
+  color: #a0aec0;
+  font-size: 1.05rem;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: color 0.2s ease, background 0.2s ease;
+
+  &:hover {
+    color: #6c5ce7;
+    background: rgba(108, 92, 231, 0.08);
+  }
+
+  &:focus-visible {
+    outline: 2px solid rgba(108, 92, 231, 0.4);
+    outline-offset: 1px;
+  }
+}
+
+/* ── Input fields ────────────────────────────────────── */
+:deep(.form-control) {
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fafbff;
+  color: #2d3748;
+  font-size: 0.95rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+
+  &::placeholder {
+    color: #c4cdd8;
+  }
+
+  &:hover:not(:focus):not(.is-invalid) {
+    border-color: #b8b8f8;
+    background: #fff;
+  }
+
+  &:focus {
+    border-color: #6c5ce7;
+    background: #fff;
+    box-shadow: 0 0 0 3.5px rgba(108, 92, 231, 0.14);
+    outline: none;
+  }
+
+  /* Shift icon colour when input is focused */
+  &:focus ~ .input-icon,
+  &:focus + .input-icon {
+    color: #6c5ce7;
+  }
+
+  &.is-invalid {
+    border-color: #e53e3e;
+    background: #fff5f5;
+    box-shadow: 0 0 0 3px rgba(229, 62, 62, 0.1);
+  }
+}
+
+/* Colour the left icon when the sibling input is focused */
+.input-icon-wrap:focus-within .input-icon {
+  color: #6c5ce7;
+}
+</style>

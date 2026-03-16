@@ -16,17 +16,12 @@
       >
         <!-- Header -->
         <div class="app-offcanvas__header">
-          <div class="app-offcanvas__header-left">
-            <div v-if="icon" class="app-offcanvas__icon">
-              <i :class="icon" />
-            </div>
-            <div>
-              <h5 class="app-offcanvas__title">{{ title }}</h5>
-              <p v-if="subtitle" class="app-offcanvas__subtitle">{{ subtitle }}</p>
-            </div>
+          <div>
+            <h5 class="app-offcanvas__title">{{ title }}</h5>
+            <p v-if="subtitle" class="app-offcanvas__subtitle">{{ subtitle }}</p>
           </div>
           <button class="app-offcanvas__close" @click="handleClose" aria-label="Close">
-            <i class="bi bi-x-lg" />
+            &#x2715;
           </button>
         </div>
 
