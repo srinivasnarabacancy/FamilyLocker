@@ -2,8 +2,7 @@
     "version": 2,
     "framework": null,
     "buildCommand": "npm run build",
-    "installCommand": "npm install",
-    "outputDirectory": "public",
+    "installCommand": "npm install && composer install --no-dev",
     "functions": {
         "api/index.php": {
             "runtime": "vercel-php@0.7.2",
@@ -13,15 +12,15 @@
     "routes": [
         {
             "src": "/build/(.*)",
-            "dest": "/build/$1"
+            "dest": "/public/build/$1"
         },
         {
             "src": "/storage/(.*)",
-            "dest": "/storage/$1"
+            "dest": "/public/storage/$1"
         },
         {
             "src": "/(.*\\.(?:ico|png|jpg|jpeg|gif|svg|webp|woff|woff2|ttf|eot)$)",
-            "dest": "/$1"
+            "dest": "/public/$1"
         },
         {
             "src": "/(.*)",
