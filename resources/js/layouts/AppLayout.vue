@@ -65,21 +65,6 @@
         </Link>
       </nav>
 
-      <!-- User Profile Footer -->
-      <div class="sidebar__footer">
-        <div class="sidebar-user">
-          <div class="sidebar-user__avatar">
-            {{ userInitials }}
-          </div>
-          <div class="sidebar-user__info">
-            <div class="sidebar-user__name">{{ user?.name }}</div>
-            <div class="sidebar-user__role">{{ formatRoleLabel(user?.role) }}</div>
-          </div>
-          <button class="sidebar-user__logout" title="Logout" @click="handleLogout">
-            <i class="bi bi-box-arrow-right" />
-          </button>
-        </div>
-      </div>
     </aside>
 
     <!-- Main content -->
@@ -101,11 +86,39 @@
           </div>
         </div>
 
-        <div class="d-flex align-items-center gap-2">
-          <div class="topbar-avatar">{{ userInitials }}</div>
-          <div class="d-none d-sm-block">
-            <div class="topbar-user-name">{{ user?.name }}</div>
-            <div class="topbar-user-role">{{ formatRoleLabel(user?.role) }}</div>
+        <div class="topbar-user-menu" :class="{ open: userMenuOpen }">
+          <button class="topbar-user-trigger" @click.stop="userMenuOpen = !userMenuOpen">
+            <div class="topbar-avatar">
+              <img v-if="user?.avatar" :src="`/storage/${user.avatar}`" :alt="user?.name" />
+              <span v-else>{{ userInitials }}</span>
+            </div>
+            <div class="d-none d-sm-block text-start">
+              <div class="topbar-user-name">{{ user?.name }}</div>
+              <div class="topbar-user-role">{{ formatRoleLabel(user?.role) }}</div>
+            </div>
+            <i class="bi bi-chevron-down topbar-chevron d-none d-sm-block" />
+          </button>
+
+          <div v-if="userMenuOpen" class="topbar-dropdown">
+            <div class="topbar-dropdown__header">
+              <div class="topbar-avatar topbar-avatar--lg">
+                <img v-if="user?.avatar" :src="`/storage/${user.avatar}`" :alt="user?.name" />
+                <span v-else>{{ userInitials }}</span>
+              </div>
+              <div>
+                <div class="topbar-dropdown__name">{{ user?.name }}</div>
+                <div class="topbar-dropdown__role">{{ formatRoleLabel(user?.role) }}</div>
+              </div>
+            </div>
+            <div class="topbar-dropdown__divider" />
+            <Link href="/app/profile" class="topbar-dropdown__item" @click="userMenuOpen = false">
+              <i class="bi bi-person-circle" />
+              My Profile
+            </Link>
+            <button class="topbar-dropdown__item topbar-dropdown__item--danger" @click="userMenuOpen = false; handleLogout()">
+              <i class="bi bi-box-arrow-right" />
+              Logout
+            </button>
           </div>
         </div>
       </header>
@@ -134,7 +147,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { Link, router, usePage } from '@inertiajs/vue3'
 import CsrfMetaSync from '@/components/CsrfMetaSync.vue'
 import ToastContainer from '@/components/ToastContainer.vue'
@@ -170,6 +183,14 @@ const userInitials = computed(() => {
 function isActive(components) {
   return components.includes(page.component)
 }
+
+const userMenuOpen = ref(false)
+
+function closeUserMenu(e) {
+  userMenuOpen.value = false
+}
+onMounted(() => document.addEventListener('click', closeUserMenu))
+onBeforeUnmount(() => document.removeEventListener('click', closeUserMenu))
 
 const showLogoutModal = ref(false)
 const loggingOut = ref(false)
