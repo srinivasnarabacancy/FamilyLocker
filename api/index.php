@@ -83,6 +83,15 @@ file_put_contents($envFile, implode("\n", $lines) . "\n");
 
 require __DIR__ . '/../vendor/autoload.php';
 
+// On Vercel, PHP runs as api/index.php so $_SERVER['SCRIPT_NAME'] = '/api/index.php'.
+// Symfony's Request uses SCRIPT_NAME to compute a base-path and strips '/api'
+// from every incoming URI before Laravel's router sees it — causing 404s for
+// all API calls (/api/dashboard → /dashboard, /api/documents → /documents, etc.).
+// Resetting SCRIPT_NAME to '/index.php' makes Symfony treat '/' as the base,
+// so the full URI is preserved and Laravel's routes resolve correctly.
+$_SERVER['SCRIPT_NAME'] = '/index.php';
+$_SERVER['PHP_SELF']    = '/index.php';
+
 /** @var \Illuminate\Foundation\Application $app */
 $app = require __DIR__ . '/../bootstrap/app.php';
 
