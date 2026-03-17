@@ -69,6 +69,8 @@ $defaults = [
     'APP_SERVICES_CACHE'   => $tmpBootstrap . '/cache/services.php',
     // Compiled views path (picked up by config/view.php)
     'VIEW_COMPILED_PATH'   => $tmpStorage . '/framework/views',
+    // Never silently drop emails in production
+    'MAIL_MAILER'          => 'smtp',
 ];
 $writtenKeys = array_map(fn($l) => explode('=', $l, 2)[0], $lines);
 foreach ($defaults as $key => $default) {
