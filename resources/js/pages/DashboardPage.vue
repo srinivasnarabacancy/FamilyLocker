@@ -97,6 +97,21 @@
             </div>
           </div>
         </div>
+        <!-- Reminders -->
+        <div class="col-6 col-lg-3">
+          <div class="dash-stat dash-stat--pink">
+            <div class="dash-stat__icon-wrap">
+              <i class="bi bi-bell" />
+            </div>
+            <div class="dash-stat__body">
+              <div class="dash-stat__label">Reminders</div>
+              <div class="dash-stat__value">{{ dashData.stats.upcoming_reminders ?? 0 }}</div>
+              <div class="dash-stat__foot">
+                <span class="dash-stat__ok"><i class="bi bi-calendar-heart me-1" />Next 30 days</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- ── Quick Actions ───────────────────────────────── -->
@@ -298,7 +313,7 @@
           </div>
 
           <!-- Upcoming Appointments -->
-          <div class="dash-card">
+          <div class="dash-card mb-4">
             <div class="dash-card__header">
               <div>
                 <h6 class="dash-card__title">Appointments</h6>
@@ -328,6 +343,46 @@
               <div v-else class="dash-empty">
                 <div class="dash-empty__icon"><i class="bi bi-calendar-check" /></div>
                 <p class="dash-empty__text">No upcoming appointments</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Upcoming Reminders -->
+          <div class="dash-card">
+            <div class="dash-card__header">
+              <div>
+                <h6 class="dash-card__title">Upcoming Reminders</h6>
+                <p class="dash-card__subtitle mb-0">Birthdays &amp; special occasions</p>
+              </div>
+              <Link href="/app/reminders" class="dash-card__link">View All <i class="bi bi-arrow-right ms-1" /></Link>
+            </div>
+            <div class="dash-card__body">
+              <template v-if="dashData.upcoming_reminders?.length">
+                <div
+                  v-for="r in dashData.upcoming_reminders"
+                  :key="r.id"
+                  class="dash-list-row"
+                >
+                  <div class="dash-reminder-icon" :style="`background:${reminderTypeColor(r.type)};`">
+                    <i :class="`bi ${reminderTypeIcon(r.type)}`" />
+                  </div>
+                  <div class="flex-grow-1 min-w-0">
+                    <div class="dash-list-row__title">{{ r.title }}</div>
+                    <div class="dash-list-row__meta">
+                      <i class="bi bi-calendar3 me-1" />{{ formatDate(r.next_occurrence) }}
+                    </div>
+                  </div>
+                  <div class="text-end flex-shrink-0">
+                    <span :class="dashCountdownClass(r.days_until)" class="small fw-semibold">
+                      {{ dashCountdownLabel(r.days_until) }}
+                    </span>
+                  </div>
+                </div>
+              </template>
+              <div v-else class="dash-empty">
+                <div class="dash-empty__icon"><i class="bi bi-bell" /></div>
+                <p class="dash-empty__text">No upcoming occasions</p>
+                <Link href="/app/reminders" class="btn btn-sm btn-primary px-4">Add Reminder</Link>
               </div>
             </div>
           </div>
@@ -398,6 +453,7 @@ const moduleIcons = {
   albums: 'bi-images',
   bills: 'bi-receipt',
   tasks: 'bi-check2-square',
+  reminders: 'bi-bell',
 }
 
 const moduleColors = {
@@ -407,10 +463,33 @@ const moduleColors = {
   albums: '#fdcb6e',
   bills: '#e17055',
   tasks: '#0984e3',
+  reminders: '#be185d',
 }
 
 function moduleIcon(m) { return moduleIcons[m] ?? 'bi-bell' }
 function moduleColor(m) { return moduleColors[m] ?? '#6C5CE7' }
+
+function reminderTypeIcon(type) {
+  return { birthday: 'bi-balloon-heart', anniversary: 'bi-hearts', holiday: 'bi-star', other: 'bi-bell' }[type] ?? 'bi-bell'
+}
+
+function reminderTypeColor(type) {
+  return { birthday: '#fce7f3', anniversary: '#ede9fe', holiday: '#fef9c3', other: '#f1f5f9' }[type] ?? '#f1f5f9'
+}
+
+function dashCountdownLabel(days) {
+  if (days === null || days === undefined) return ''
+  if (days === 0) return 'Today 🎉'
+  if (days === 1) return 'Tomorrow'
+  return `${days}d`
+}
+
+function dashCountdownClass(days) {
+  if (days === null || days === undefined) return 'text-muted'
+  if (days <= 1) return 'text-success'
+  if (days <= 7) return 'text-warning'
+  return 'text-muted'
+}
 
 function formatAmount(v) {
   return Number(v ?? 0).toLocaleString('en-IN')
@@ -568,6 +647,7 @@ onMounted(() => {
 .dash-stat--orange::before { background: linear-gradient(90deg, #e17055, #fdcb6e); }
 .dash-stat--red::before    { background: linear-gradient(90deg, #d63031, #e17055); }
 .dash-stat--blue::before   { background: linear-gradient(90deg, #0984e3, #74b9ff); }
+.dash-stat--pink::before   { background: linear-gradient(90deg, #be185d, #f472b6); }
 
 .dash-stat__icon-wrap {
   width: 44px;
@@ -586,6 +666,7 @@ onMounted(() => {
 .dash-stat--orange .dash-stat__icon-wrap { background: #fff3e0; color: #e17055; }
 .dash-stat--red    .dash-stat__icon-wrap { background: #fee2e2; color: #d63031; }
 .dash-stat--blue   .dash-stat__icon-wrap { background: #dbeafe; color: #0984e3; }
+.dash-stat--pink   .dash-stat__icon-wrap { background: #fce7f3; color: #be185d; }
 
 .dash-stat__label {
   font-size: 0.7rem;
@@ -842,6 +923,21 @@ onMounted(() => {
   border-radius: 10px;
   background: #fee2e2;
   color: #d63031;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+/* ═══════════════════════════════════════════════════════
+   Reminder Icon
+═══════════════════════════════════════════════════════ */
+.dash-reminder-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  color: #be185d;
   display: flex;
   align-items: center;
   justify-content: center;

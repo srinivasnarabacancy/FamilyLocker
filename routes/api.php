@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\DocumentController;
 use App\Http\Controllers\Api\ExpenseController;
 use App\Http\Controllers\Api\FamilyController;
 use App\Http\Controllers\Api\MedicalController;
+use App\Http\Controllers\Api\ReminderController;
 use App\Http\Controllers\Api\TaskController;
 use Illuminate\Support\Facades\Route;
 
@@ -118,6 +119,16 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::put('{id}', [TaskController::class, 'update']);
             Route::patch('{id}/status', [TaskController::class, 'updateStatus']);
             Route::delete('{id}', [TaskController::class, 'destroy']);
+        });
+
+        // Reminders (birthdays, anniversaries, special occasions)
+        Route::prefix('reminders')->group(function () {
+            Route::get('/', [ReminderController::class, 'index']);
+            Route::post('/', [ReminderController::class, 'store']);
+            Route::get('upcoming', [ReminderController::class, 'upcoming']);
+            Route::get('{id}', [ReminderController::class, 'show']);
+            Route::put('{id}', [ReminderController::class, 'update']);
+            Route::delete('{id}', [ReminderController::class, 'destroy']);
         });
     });
 });

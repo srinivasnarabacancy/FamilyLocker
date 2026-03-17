@@ -165,6 +165,7 @@ const mainNavItems = [
   { href: '/app/albums', label: 'Albums', icon: 'bi bi-images', components: ['AlbumsPage', 'AlbumDetailPage'] },
   { href: '/app/bills', label: 'Bills', icon: 'bi bi-receipt', components: ['BillsPage'] },
   { href: '/app/tasks', label: 'Tasks', icon: 'bi bi-check2-square', components: ['TasksPage'] },
+  { href: '/app/reminders', label: 'Reminders', icon: 'bi bi-bell', components: ['RemindersPage'] },
 ]
 
 const user = computed(() => page.props.auth?.user ?? null)

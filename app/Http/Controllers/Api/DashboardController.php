@@ -7,6 +7,7 @@ use App\Models\Bill;
 use App\Models\Document;
 use App\Models\Expense;
 use App\Models\MedicalRecord;
+use App\Models\Reminder;
 use App\Models\Task;
 use App\Models\Appointment;
 use Illuminate\Http\JsonResponse;
@@ -52,6 +53,11 @@ class DashboardController extends BaseApiController
             'upcoming_appointments' => Appointment::where('family_id', $familyId)
                 ->where('status', 'scheduled')
                 ->whereDate('date', '>=', $today)
+                ->count(),
+            'upcoming_reminders' => Reminder::where('family_id', $familyId)
+                ->where('is_active', true)
+                ->get()
+                ->filter(fn(Reminder $r) => $r->days_until !== null && $r->days_until >= 0 && $r->days_until <= 30)
                 ->count(),
         ];
 
@@ -104,11 +110,22 @@ class DashboardController extends BaseApiController
             ->reverse()
             ->values();
 
+        // Upcoming reminders (within next 30 days)
+        $upcomingReminders = Reminder::where('family_id', $familyId)
+            ->where('is_active', true)
+            ->with('creator')
+            ->get()
+            ->filter(fn(Reminder $r) => $r->days_until !== null && $r->days_until >= 0 && $r->days_until <= 30)
+            ->sortBy('days_until')
+            ->values()
+            ->take(5);
+
         return $this->successResponse([
             'stats' => $stats,
             'recent_activities' => $recentActivities,
             'upcoming_bills' => $upcomingBills,
             'upcoming_appointments' => $upcomingAppointments,
+            'upcoming_reminders' => $upcomingReminders,
             'pending_tasks' => $pendingTasks,
             'expiring_documents' => $expiringDocuments,
             'monthly_expenses' => $monthlyExpenses,

@@ -56,6 +56,7 @@ Route::middleware('auth')->group(function () use ($renderPage): void {
         ]))->whereNumber('id')->name('album-detail');
         Route::get('/bills', $renderPage('BillsPage', 'Bills'))->name('bills');
         Route::get('/tasks', $renderPage('TasksPage', 'Tasks'))->name('tasks');
+        Route::get('/reminders', $renderPage('RemindersPage', 'Reminders'))->name('reminders');
         Route::get('/family', $renderPage('FamilyPage', 'Family'))->name('family');
         Route::get('/profile', $renderPage('ProfilePage', 'Profile'))->name('profile');
     });

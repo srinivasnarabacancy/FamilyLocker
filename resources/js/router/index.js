@@ -18,6 +18,7 @@ const AlbumsPage = () => import('@/pages/AlbumsPage.vue')
 const AlbumDetailPage = () => import('@/pages/AlbumDetailPage.vue')
 const BillsPage = () => import('@/pages/BillsPage.vue')
 const TasksPage = () => import('@/pages/TasksPage.vue')
+const RemindersPage = () => import('@/pages/RemindersPage.vue')
 const FamilyPage = () => import('@/pages/FamilyPage.vue')
 const ProfilePage = () => import('@/pages/ProfilePage.vue')
 
@@ -45,6 +46,7 @@ const routes = [
       { path: 'albums/:id', name: 'album-detail', component: AlbumDetailPage },
       { path: 'bills', name: 'bills', component: BillsPage },
       { path: 'tasks', name: 'tasks', component: TasksPage },
+      { path: 'reminders', name: 'reminders', component: RemindersPage },
       { path: 'family', name: 'family', component: FamilyPage },
       { path: 'profile', name: 'profile', component: ProfilePage },
     ],
