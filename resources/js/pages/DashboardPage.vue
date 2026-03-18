@@ -11,7 +11,7 @@
             {{ user?.name?.charAt(0)?.toUpperCase() ?? '?' }}
           </div>
           <div>
-            <div class="dash-banner__greeting">Good {{ greeting }} ☀️</div>
+            <div class="dash-banner__greeting"><i class="bi bi-brightness-high-fill me-1" />Good {{ greeting }}</div>
             <h4 class="dash-banner__name mb-0">{{ user?.name?.split(' ')[0] }},</h4>
             <p class="dash-banner__sub mb-0">Here's what's happening with your family today.</p>
           </div>
@@ -32,7 +32,7 @@
       <!-- ── Stat Cards ──────────────────────────────────── -->
       <div class="row g-3 mb-4">
         <!-- Documents -->
-        <div class="col-6 col-lg-3">
+        <div class="col-6 col-md-4 col-xl">
           <div class="dash-stat dash-stat--purple">
             <div class="dash-stat__icon-wrap">
               <i class="bi bi-file-earmark-text" />
@@ -50,7 +50,7 @@
           </div>
         </div>
         <!-- Expenses -->
-        <div class="col-6 col-lg-3">
+        <div class="col-6 col-md-4 col-xl">
           <div class="dash-stat dash-stat--green">
             <div class="dash-stat__icon-wrap">
               <i class="bi bi-wallet2" />
@@ -65,7 +65,7 @@
           </div>
         </div>
         <!-- Bills -->
-        <div class="col-6 col-lg-3">
+        <div class="col-6 col-md-4 col-xl">
           <div class="dash-stat" :class="dashData.stats.overdue_bills ? 'dash-stat--red' : 'dash-stat--orange'">
             <div class="dash-stat__icon-wrap">
               <i class="bi bi-receipt" />
@@ -83,7 +83,7 @@
           </div>
         </div>
         <!-- Tasks -->
-        <div class="col-6 col-lg-3">
+        <div class="col-6 col-md-6 col-xl">
           <div class="dash-stat dash-stat--blue">
             <div class="dash-stat__icon-wrap">
               <i class="bi bi-check2-square" />
@@ -98,7 +98,7 @@
           </div>
         </div>
         <!-- Reminders -->
-        <div class="col-6 col-lg-3">
+        <div class="col-6 col-md-6 col-xl">
           <div class="dash-stat dash-stat--pink">
             <div class="dash-stat__icon-wrap">
               <i class="bi bi-bell" />
@@ -117,27 +117,27 @@
       <!-- ── Quick Actions ───────────────────────────────── -->
       <div class="dash-quick-actions mb-4">
         <Link href="/app/documents" class="dash-qa-btn">
-          <span class="dash-qa-btn__icon" style="background:#ede9fe;color:#6C5CE7"><i class="bi bi-file-earmark-plus" /></span>
+          <span class="dash-qa-btn__icon qa-icon--purple"><i class="bi bi-file-earmark-plus" /></span>
           <span>Add Document</span>
         </Link>
         <Link href="/app/expenses" class="dash-qa-btn">
-          <span class="dash-qa-btn__icon" style="background:#d1fae5;color:#00b894"><i class="bi bi-plus-circle" /></span>
+          <span class="dash-qa-btn__icon qa-icon--green"><i class="bi bi-plus-circle" /></span>
           <span>Log Expense</span>
         </Link>
         <Link href="/app/tasks" class="dash-qa-btn">
-          <span class="dash-qa-btn__icon" style="background:#e0f2fe;color:#0984e3"><i class="bi bi-check2-circle" /></span>
+          <span class="dash-qa-btn__icon qa-icon--blue"><i class="bi bi-check2-circle" /></span>
           <span>New Task</span>
         </Link>
         <Link href="/app/bills" class="dash-qa-btn">
-          <span class="dash-qa-btn__icon" style="background:#fff3cd;color:#e17055"><i class="bi bi-receipt-cutoff" /></span>
+          <span class="dash-qa-btn__icon qa-icon--orange"><i class="bi bi-receipt-cutoff" /></span>
           <span>Add Bill</span>
         </Link>
         <Link href="/app/medical" class="dash-qa-btn">
-          <span class="dash-qa-btn__icon" style="background:#fee2e2;color:#d63031"><i class="bi bi-heart-pulse" /></span>
+          <span class="dash-qa-btn__icon qa-icon--red"><i class="bi bi-heart-pulse" /></span>
           <span>Medical</span>
         </Link>
         <Link href="/app/albums" class="dash-qa-btn">
-          <span class="dash-qa-btn__icon" style="background:#fef6e4;color:#fdcb6e"><i class="bi bi-images" /></span>
+          <span class="dash-qa-btn__icon qa-icon--yellow"><i class="bi bi-images" /></span>
           <span>Albums</span>
         </Link>
       </div>
@@ -147,6 +147,7 @@
 
         <!-- Left Column ─── 8 cols -->
         <div class="col-lg-8">
+          <div class="dash-section-label mb-3"><i class="bi bi-grid-1x2 me-2" />Overview</div>
 
           <!-- Monthly Expense Chart -->
           <div class="dash-card mb-4">
@@ -243,6 +244,7 @@
 
         <!-- Right Column ─── 4 cols -->
         <div class="col-lg-4">
+          <div class="dash-section-label mb-3"><i class="bi bi-list-check me-2" />At a Glance</div>
 
           <!-- Upcoming Bills -->
           <div class="dash-card mb-4">
@@ -479,7 +481,7 @@ function reminderTypeColor(type) {
 
 function dashCountdownLabel(days) {
   if (days === null || days === undefined) return ''
-  if (days === 0) return 'Today 🎉'
+  if (days === 0) return 'Today'
   if (days === 1) return 'Tomorrow'
   return `${days}d`
 }
@@ -735,6 +737,12 @@ onMounted(() => {
   font-size: 0.95rem;
   flex-shrink: 0;
 }
+.qa-icon--purple { background: #ede9fe; color: #6C5CE7; }
+.qa-icon--green  { background: #d1fae5; color: #00b894; }
+.qa-icon--blue   { background: #e0f2fe; color: #0984e3; }
+.qa-icon--orange { background: #fff3cd; color: #e17055; }
+.qa-icon--red    { background: #fee2e2; color: #d63031; }
+.qa-icon--yellow { background: #fef6e4; color: #e6a817; }
 
 /* ═══════════════════════════════════════════════════════
    Card Shell
@@ -827,6 +835,7 @@ onMounted(() => {
   letter-spacing: 0.4px;
   flex-shrink: 0;
 }
+.dash-priority--urgent { background: #fce7f3; color: #9d174d; }
 .dash-priority--high   { background: #fee2e2; color: #d63031; }
 .dash-priority--medium { background: #fff3cd; color: #b45309; }
 .dash-priority--low    { background: #d1fae5; color: #00b894; }
@@ -991,6 +1000,20 @@ onMounted(() => {
   color: #8a94a6;
   margin-top: 0.15rem;
 }
+
+/* ═══════════════════════════════════════════════════════
+   Section Label
+═══════════════════════════════════════════════════════ */
+.dash-section-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+}
+.dash-section-label i { font-size: 0.75rem; }
 
 /* ═══════════════════════════════════════════════════════
    Empty State
