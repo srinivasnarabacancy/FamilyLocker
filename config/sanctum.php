@@ -15,18 +15,11 @@ return [
     |
     */
 
-    'stateful' => array_filter(array_unique(array_merge(
-        explode(',', env('SANCTUM_STATEFUL_DOMAINS', implode(',', array_filter([
-            'localhost',
-            'localhost:3000',
-            '127.0.0.1',
-            '127.0.0.1:8000',
-            '::1',
-            Sanctum::currentApplicationUrlWithPort(),
-        ])))),
-        // Always treat the current request host as stateful so same-domain
-        // Inertia + Sanctum session auth works regardless of APP_URL value.
-        [Sanctum::currentRequestHost()],
+    'stateful' => explode(',', env('SANCTUM_STATEFUL_DOMAINS', sprintf(
+        '%s%s%s',
+        'localhost,localhost:3000,127.0.0.1,127.0.0.1:8000,::1',
+        Sanctum::currentApplicationUrlWithPort(),
+        Sanctum::currentRequestHost(),
     ))),
 
     /*
