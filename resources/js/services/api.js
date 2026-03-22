@@ -24,6 +24,12 @@ api.interceptors.request.use(
       delete config.headers['X-CSRF-TOKEN']
     }
 
+    // Attach Bearer token from localStorage if available
+    const token = localStorage.getItem('auth_token')
+    if (token) {
+      config.headers['Authorization'] = `Bearer ${token}`
+    }
+
     // Let the browser set the multipart boundary for FormData uploads.
     if (config.data instanceof FormData) {
       delete config.headers['Content-Type']
@@ -39,6 +45,7 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
+      localStorage.removeItem('auth_token')
       router.visit('/login')
     }
     return Promise.reject(error)
