@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Database\PostgresConnection;
+use Illuminate\Database\Connection;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 
@@ -12,7 +14,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Register our custom PostgresConnection so booleans are sent as
+        // 'TRUE'/'FALSE' literals instead of 1/0. This is necessary when
+        // PDO::ATTR_EMULATE_PREPARES is enabled for Supabase PgBouncer.
+        Connection::resolverFor('pgsql', function ($connection, $database, $prefix, $config) {
+            return new PostgresConnection($connection, $database, $prefix, $config);
+        });
     }
 
     /**
