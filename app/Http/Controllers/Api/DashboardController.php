@@ -20,6 +20,15 @@ class DashboardController extends BaseApiController
         $familyId = $request->user()->family_id;
         $today = now()->toDateString();
 
+        // Load active reminders once — reused for both the stats count and the list.
+        $allActiveReminders = Reminder::where('family_id', $familyId)
+            ->where('is_active', true)
+            ->with('creator')
+            ->get()
+            ->filter(fn(Reminder $r) => $r->days_until !== null && $r->days_until >= 0 && $r->days_until <= 30)
+            ->sortBy('days_until')
+            ->values();
+
         // Stats counts
         $stats = [
             'documents' => Document::where('family_id', $familyId)->count(),
@@ -54,11 +63,8 @@ class DashboardController extends BaseApiController
                 ->where('status', 'scheduled')
                 ->whereDate('date', '>=', $today)
                 ->count(),
-            'upcoming_reminders' => Reminder::where('family_id', $familyId)
-                ->where('is_active', true)
-                ->get()
-                ->filter(fn(Reminder $r) => $r->days_until !== null && $r->days_until >= 0 && $r->days_until <= 30)
-                ->count(),
+            // Reuse in-memory collection — avoids a second full reminders query.
+            'upcoming_reminders' => $allActiveReminders->count(),
         ];
 
         // Recent activities
@@ -110,15 +116,8 @@ class DashboardController extends BaseApiController
             ->reverse()
             ->values();
 
-        // Upcoming reminders (within next 30 days)
-        $upcomingReminders = Reminder::where('family_id', $familyId)
-            ->where('is_active', true)
-            ->with('creator')
-            ->get()
-            ->filter(fn(Reminder $r) => $r->days_until !== null && $r->days_until >= 0 && $r->days_until <= 30)
-            ->sortBy('days_until')
-            ->values()
-            ->take(5);
+        // Upcoming reminders — reuse already-loaded collection.
+        $upcomingReminders = $allActiveReminders->take(5);
 
         return $this->successResponse([
             'stats' => $stats,

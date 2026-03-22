@@ -7,7 +7,9 @@ export const useDashboardStore = defineStore('dashboard', () => {
   const loading = ref(false)
 
   async function fetchDashboard() {
-    loading.value = true
+    // If we already have data, skip the shimmer — refresh silently in background.
+    const isRefresh = !!data.value
+    if (!isRefresh) loading.value = true
     try {
       const { data: res } = await api.get('/dashboard')
       data.value = res.data
