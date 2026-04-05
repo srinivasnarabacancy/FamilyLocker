@@ -55,4 +55,9 @@ class Family extends Model
     {
         return $this->hasMany(ActivityLog::class);
     }
+
+    public function reminders()
+    {
+        return $this->hasMany(Reminder::class);
+    }
 }
