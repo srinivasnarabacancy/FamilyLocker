@@ -47,13 +47,17 @@ export const useMedicalStore = defineStore('medical', () => {
     return data
   }
 
-  async function createMedicine(payload) {
-    const { data } = await api.post('/medical/medicines', payload)
+  async function createMedicine(formData) {
+    const { data } = await api.post('/medical/medicines', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
     return data
   }
 
-  async function updateMedicine(id, payload) {
-    const { data } = await api.put(`/medical/medicines/${id}`, payload)
+  async function updateMedicine(id, formData) {
+    const { data } = await api.post(`/medical/medicines/${id}`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
     return data
   }
 

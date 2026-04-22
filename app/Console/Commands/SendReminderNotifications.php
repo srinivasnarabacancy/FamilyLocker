@@ -2,8 +2,12 @@
 
 namespace App\Console\Commands;
 
+use App\Mail\AppointmentReminderMail;
+use App\Mail\MedicineCompletionMail;
 use App\Mail\ReminderNotificationMail;
+use App\Models\Appointment;
 use App\Models\Family;
+use App\Models\Medicine;
 use App\Models\Reminder;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
@@ -30,20 +34,79 @@ class SendReminderNotifications extends Command
             ->get()
             ->filter(fn (Reminder $r) => $r->shouldNotifyToday());
 
-        if ($reminders->isEmpty()) {
+        if ($reminders->isNotEmpty()) {
+            $this->info("Found {$reminders->count()} reminder(s) to dispatch.");
+
+            $byFamily  = $reminders->groupBy('family_id');
+            $totalSent = 0;
+
+            foreach ($byFamily as $familyId => $familyReminders) {
+                /** @var Family $family */
+                $family  = $familyReminders->first()->family;
+                $members = $family->members->filter(fn ($m) => $m->email && $m->hasVerifiedEmail());
+
+                if ($members->isEmpty()) {
+                    $this->warn("  Family #{$familyId} ({$family->name}): no verified members — skipping.");
+                    continue;
+                }
+
+                foreach ($members as $member) {
+                    if ($dryRun) {
+                        $this->line("  [DRY RUN] Would email {$member->email} — {$familyReminders->count()} reminder(s):");
+                        foreach ($familyReminders as $r) {
+                            $this->line("    • {$r->title} (in {$r->days_until} day(s))");
+                        }
+                    } else {
+                        if ($totalSent > 0) {
+                            sleep(2);
+                        }
+                        Mail::to($member->email)->queue(
+                            new ReminderNotificationMail($member, $family, $familyReminders)
+                        );
+                        $this->line("  Queued email → {$member->email} ({$familyReminders->count()} reminder(s))");
+                        $totalSent++;
+                    }
+                }
+
+                if (!$dryRun) {
+                    Reminder::whereIn('id', $familyReminders->pluck('id'))
+                        ->update(['notification_sent_at' => $today->toDateString()]);
+                }
+            }
+        } else {
             $this->info('No reminders require notification today.');
-            return self::SUCCESS;
         }
 
-        $this->info("Found {$reminders->count()} reminder(s) to dispatch.");
+        $this->info('Done.');
 
-        // Group reminders by family so we can send one digest email per family per member.
-        $byFamily    = $reminders->groupBy('family_id');
-        $totalSent   = 0;   // global counter to throttle across all families
+        // ── Appointment reminders ────────────────────────────────────────────
+        $this->sendAppointmentReminders($today, $dryRun);
 
-        foreach ($byFamily as $familyId => $familyReminders) {
-            /** @var Family $family */
-            $family  = $familyReminders->first()->family;
+        // ── Medicine completion notifications ────────────────────────────────
+        $this->sendMedicineCompletionNotifications($today, $dryRun);
+
+        return self::SUCCESS;
+    }
+
+    private function sendAppointmentReminders(Carbon $today, bool $dryRun): void
+    {
+        $appointments = Appointment::where('status', '!=', 'cancelled')
+            ->whereDate('date', '>=', $today)
+            ->with('family.members')
+            ->get()
+            ->filter(fn (Appointment $a) => $a->shouldNotifyToday());
+
+        if ($appointments->isEmpty()) {
+            $this->info('No appointment reminders to send today.');
+            return;
+        }
+
+        $this->info("Found {$appointments->count()} appointment(s) to notify.");
+
+        $byFamily = $appointments->groupBy('family_id');
+
+        foreach ($byFamily as $familyId => $familyAppts) {
+            $family  = $familyAppts->first()->family;
             $members = $family->members->filter(fn ($m) => $m->email && $m->hasVerifiedEmail());
 
             if ($members->isEmpty()) {
@@ -53,32 +116,59 @@ class SendReminderNotifications extends Command
 
             foreach ($members as $member) {
                 if ($dryRun) {
-                    $this->line("  [DRY RUN] Would email {$member->email} — {$familyReminders->count()} reminder(s):");
-                    foreach ($familyReminders as $r) {
-                        $this->line("    • {$r->title} (in {$r->days_until} day(s))");
-                    }
+                    $this->line("  [DRY RUN] Would email {$member->email} — {$familyAppts->count()} appointment(s).");
                 } else {
-                    // Pause before every send after the first to respect SMTP rate limits.
-                    if ($totalSent > 0) {
-                        sleep(2);
-                    }
-
+                    sleep(2);
                     Mail::to($member->email)->queue(
-                        new ReminderNotificationMail($member, $family, $familyReminders)
+                        new AppointmentReminderMail($member, $family, $familyAppts)
                     );
-                    $this->line("  Queued email → {$member->email} ({$familyReminders->count()} reminder(s))");
-                    $totalSent++;
+                    $this->line("  Queued appointment reminder → {$member->email}");
                 }
             }
 
-            // Mark all reminders in this family as notified today.
             if (!$dryRun) {
-                Reminder::whereIn('id', $familyReminders->pluck('id'))
+                Appointment::whereIn('id', $familyAppts->pluck('id'))
                     ->update(['notification_sent_at' => $today->toDateString()]);
             }
         }
+    }
 
-        $this->info('Done.');
-        return self::SUCCESS;
+    private function sendMedicineCompletionNotifications(Carbon $today, bool $dryRun): void
+    {
+        $medicines = Medicine::whereDate('end_date', $today)
+            ->where('notify_on_completion', true)
+            ->with('family.members')
+            ->get();
+
+        if ($medicines->isEmpty()) {
+            $this->info('No medicine completions to notify today.');
+            return;
+        }
+
+        $this->info("Found {$medicines->count()} medicine(s) completing today.");
+
+        $byFamily = $medicines->groupBy('family_id');
+
+        foreach ($byFamily as $familyId => $familyMedicines) {
+            $family  = $familyMedicines->first()->family;
+            $members = $family->members->filter(fn ($m) => $m->email && $m->hasVerifiedEmail());
+
+            if ($members->isEmpty()) {
+                $this->warn("  Family #{$familyId} ({$family->name}): no verified members — skipping.");
+                continue;
+            }
+
+            foreach ($members as $member) {
+                if ($dryRun) {
+                    $this->line("  [DRY RUN] Would email {$member->email} — {$familyMedicines->count()} medicine(s) completed.");
+                } else {
+                    sleep(5);
+                    Mail::to($member->email)->queue(
+                        new MedicineCompletionMail($member, $family, $familyMedicines)
+                    );
+                    $this->line("  Queued medicine completion email → {$member->email}");
+                }
+            }
+        }
     }
 }

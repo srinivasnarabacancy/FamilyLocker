@@ -85,7 +85,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
             Route::get('medicines', [MedicalController::class, 'medicines']);
             Route::post('medicines', [MedicalController::class, 'storeMedicine']);
-            Route::put('medicines/{id}', [MedicalController::class, 'updateMedicine']);
+            Route::post('medicines/{id}', [MedicalController::class, 'updateMedicine']);
             Route::delete('medicines/{id}', [MedicalController::class, 'destroyMedicine']);
 
             Route::get('appointments', [MedicalController::class, 'appointments']);

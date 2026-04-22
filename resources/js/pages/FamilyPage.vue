@@ -44,7 +44,7 @@
         <div class="fl-card p-3">
           <div class="d-flex align-items-center gap-3">
             <div class="member-avatar" :style="`background:${memberColor(member.name)}`">
-              <img v-if="member.avatar" :src="`/storage/${member.avatar}`" :alt="member.name" />
+              <img v-if="member.avatar" :src="`/storage/${member.avatar}`" :alt="member.name" @error="$event.target.style.display='none'" />
               <span v-else>{{ initials(member.name) }}</span>
             </div>
             <div class="flex-grow-1 min-w-0">

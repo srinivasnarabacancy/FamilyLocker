@@ -89,7 +89,7 @@
         <div class="topbar-user-menu" :class="{ open: userMenuOpen }">
           <button class="topbar-user-trigger" @click.stop="userMenuOpen = !userMenuOpen">
             <div class="topbar-avatar">
-              <img v-if="user?.avatar" :src="`/storage/${user.avatar}`" :alt="user?.name" />
+              <img v-if="user?.avatar" :src="`/storage/${user.avatar}`" :alt="user?.name" @error="$event.target.style.display='none'" />
               <span v-else>{{ userInitials }}</span>
             </div>
             <div class="d-none d-sm-block text-start">
@@ -102,7 +102,7 @@
           <div v-if="userMenuOpen" class="topbar-dropdown">
             <div class="topbar-dropdown__header">
               <div class="topbar-avatar topbar-avatar--lg">
-                <img v-if="user?.avatar" :src="`/storage/${user.avatar}`" :alt="user?.name" />
+                <img v-if="user?.avatar" :src="`/storage/${user.avatar}`" :alt="user?.name" @error="$event.target.style.display='none'" />
                 <span v-else>{{ userInitials }}</span>
               </div>
               <div>

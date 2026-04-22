@@ -20,6 +20,7 @@
                 v-if="avatarPreview || user.avatar"
                 :src="avatarPreview || `/storage/${user.avatar}`"
                 alt="Avatar"
+                @error="$event.target.style.display='none'"
               />
               <span v-else>{{ userInitials }}</span>
             </div>

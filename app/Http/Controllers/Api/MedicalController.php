@@ -134,23 +134,30 @@ class MedicalController extends BaseApiController
     public function storeMedicine(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'member_name' => 'required|string|max:255',
-            'name' => 'required|string|max:255',
-            'dosage' => 'nullable|string|max:100',
-            'frequency' => 'nullable|string|max:100',
-            'start_date' => 'nullable|date',
-            'end_date' => 'nullable|date|after_or_equal:start_date',
-            'medical_record_id' => 'nullable|exists:medical_records,id',
+            'member_name'          => 'required|string|max:255',
+            'name'                 => 'required|string|max:255',
+            'dosage'               => 'nullable|string|max:100',
+            'frequency'            => 'nullable|string|max:100',
+            'start_date'           => 'nullable|date',
+            'end_date'             => 'nullable|date|after_or_equal:start_date',
+            'medical_record_id'    => 'nullable|exists:medical_records,id',
+            'image'                => 'nullable|file|max:5120|mimes:jpg,jpeg,png,webp',
+            'notify_on_completion' => 'nullable|boolean',
         ]);
 
         if ($validator->fails()) {
             return $this->errorResponse('Validation failed', 422, $validator->errors());
         }
 
-        $medicine = Medicine::create([
-            ...$request->only(['member_name', 'name', 'dosage', 'frequency', 'start_date', 'end_date', 'notes', 'medical_record_id']),
-            'family_id' => $request->user()->family_id,
-        ]);
+        $data = $request->only(['member_name', 'name', 'dosage', 'frequency', 'start_date', 'end_date', 'notes', 'medical_record_id']);
+        $data['family_id']            = $request->user()->family_id;
+        $data['notify_on_completion'] = $request->boolean('notify_on_completion');
+
+        if ($request->hasFile('image')) {
+            $data['image_path'] = $request->file('image')->store('medicines', 'public');
+        }
+
+        $medicine = Medicine::create($data);
 
         return $this->successResponse($medicine, 'Medicine added', 201);
     }
@@ -165,7 +172,16 @@ class MedicalController extends BaseApiController
             return $this->errorResponse('Medicine not found', 404);
         }
 
-        $medicine->update($request->only(['member_name', 'name', 'dosage', 'frequency', 'start_date', 'end_date', 'is_active', 'notes']));
+        $data = $request->only(['member_name', 'name', 'dosage', 'frequency', 'start_date', 'end_date', 'notes']);
+        $data['is_active']            = $request->boolean('is_active');
+        $data['notify_on_completion'] = $request->boolean('notify_on_completion');
+
+        if ($request->hasFile('image')) {
+            if ($medicine->image_path) Storage::disk('public')->delete($medicine->image_path);
+            $data['image_path'] = $request->file('image')->store('medicines', 'public');
+        }
+
+        $medicine->update($data);
 
         return $this->successResponse($medicine->fresh(), 'Medicine updated');
     }
@@ -180,6 +196,7 @@ class MedicalController extends BaseApiController
             return $this->errorResponse('Medicine not found', 404);
         }
 
+        if ($medicine->image_path) Storage::disk('public')->delete($medicine->image_path);
         $medicine->delete();
 
         return $this->successResponse(null, 'Medicine deleted');
@@ -206,13 +223,14 @@ class MedicalController extends BaseApiController
     public function storeAppointment(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'member_name' => 'required|string|max:255',
-            'doctor_name' => 'required|string|max:255',
-            'specialty' => 'nullable|string|max:100',
-            'date' => 'required|date',
-            'time' => 'nullable|date_format:H:i',
-            'location' => 'nullable|string|max:255',
-            'notes' => 'nullable|string',
+            'member_name'        => 'required|string|max:255',
+            'doctor_name'        => 'required|string|max:255',
+            'specialty'          => 'nullable|string|max:100',
+            'date'               => 'required|date',
+            'time'               => 'nullable|date_format:H:i,H:i:s',
+            'location'           => 'nullable|string|max:255',
+            'notes'              => 'nullable|string',
+            'remind_days_before' => 'nullable|integer|min:0|max:365',
         ]);
 
         if ($validator->fails()) {
@@ -220,9 +238,9 @@ class MedicalController extends BaseApiController
         }
 
         $appointment = Appointment::create([
-            ...$request->only(['member_name', 'doctor_name', 'specialty', 'date', 'time', 'location', 'notes']),
+            ...$request->only(['member_name', 'doctor_name', 'specialty', 'date', 'time', 'location', 'notes', 'remind_days_before']),
             'family_id' => $request->user()->family_id,
-            'user_id' => $request->user()->id,
+            'user_id'   => $request->user()->id,
         ]);
 
         $this->logActivity(
@@ -243,7 +261,7 @@ class MedicalController extends BaseApiController
             return $this->errorResponse('Appointment not found', 404);
         }
 
-        $appointment->update($request->only(['member_name', 'doctor_name', 'specialty', 'date', 'time', 'location', 'notes', 'status']));
+        $appointment->update($request->only(['member_name', 'doctor_name', 'specialty', 'date', 'time', 'location', 'notes', 'status', 'remind_days_before']));
 
         return $this->successResponse($appointment->fresh(), 'Appointment updated');
     }
