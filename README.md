@@ -127,12 +127,36 @@ The reminders module sends a digest email to every verified family member when a
 
 ### Scheduler setup
 
+#### Traditional server (VPS / shared hosting)
+
 The command is registered in `routes/console.php` to run every day at **08:00**:
 
 ```bash
-# Add this single cron entry to your server to drive all scheduled tasks:
+# Add this single cron entry to your server:
 * * * * * cd /path/to/project && php artisan schedule:run >> /dev/null 2>&1
 ```
+
+#### Vercel (serverless)
+
+Vercel has no persistent process, so the scheduler is driven by **Vercel Cron Jobs** instead. `vercel.json` already defines the cron:
+
+```json
+"crons": [{ "path": "/api/cron/reminders", "schedule": "0 8 * * *" }]
+```
+
+Vercel calls `GET /api/cron/reminders` every day at 08:00 UTC. The endpoint is protected by a shared secret — set it in both your Vercel project environment variables and your `.env`:
+
+```env
+CRON_SECRET=your-random-secret-here
+```
+
+Generate a secure value with:
+
+```bash
+php artisan key:generate --show
+```
+
+Vercel automatically passes the secret as `Authorization: Bearer <CRON_SECRET>` when invoking the cron endpoint. Any other caller without the correct token receives a 401.
 
 ### Manual trigger
 

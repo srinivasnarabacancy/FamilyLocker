@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AlbumController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BillController;
+use App\Http\Controllers\Api\CronController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\DocumentController;
 use App\Http\Controllers\Api\ExpenseController;
@@ -11,6 +12,11 @@ use App\Http\Controllers\Api\MedicalController;
 use App\Http\Controllers\Api\ReminderController;
 use App\Http\Controllers\Api\TaskController;
 use Illuminate\Support\Facades\Route;
+
+// ─── Vercel Cron endpoint ─────────────────────────────────────────────────────
+// Called daily by Vercel's cron scheduler (see vercel.json).
+// Protected by a shared secret so only Vercel can trigger it.
+Route::get('cron/reminders', [CronController::class, 'sendReminders']);
 
 // Public routes
 Route::prefix('auth')->group(function () {

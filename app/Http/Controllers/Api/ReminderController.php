@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Mail\ReminderCreatedMail;
+use App\Models\Family;
 use App\Models\Reminder;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 
 class ReminderController extends BaseApiController
@@ -92,6 +95,8 @@ class ReminderController extends BaseApiController
             "Created reminder: {$reminder->title}"
         );
 
+        $this->notifyFamilyReminderCreated($reminder, $request->user());
+
         return $this->successResponse($reminder->load('creator'), 'Reminder created', 201);
     }
 
@@ -175,5 +180,17 @@ class ReminderController extends BaseApiController
         );
 
         return $this->successResponse(null, 'Reminder deleted');
+    }
+
+    private function notifyFamilyReminderCreated(Reminder $reminder, $creator): void
+    {
+        $family  = Family::with('members')->find($reminder->family_id);
+        $members = $family->members->filter(fn ($m) => $m->email && $m->hasVerifiedEmail());
+
+        foreach ($members as $member) {
+            Mail::to($member->email)->queue(
+                new ReminderCreatedMail($member, $creator, $family, $reminder)
+            );
+        }
     }
 }
