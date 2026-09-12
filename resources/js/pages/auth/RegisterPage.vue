@@ -16,6 +16,10 @@
         <h3 class="fw-bold mb-1">Get started</h3>
         <p class="text-muted small mb-4">Create your account and set up your family.</p>
 
+        <div v-if="form.error" class="alert alert-danger py-2 small" role="alert">
+          <i class="bi bi-exclamation-circle me-1" />{{ form.error }}
+        </div>
+
         <form @submit.prevent="handleRegister">
         
           <div class="row g-2 mb-3">
@@ -113,9 +117,9 @@
 
         <p class="text-center text-muted small mb-0">
           Already have an account?
-          <Link href="/login" class="text-primary fw-semibold">
+          <RouterLink to="/login" class="text-primary fw-semibold">
             Sign in
-          </Link>
+          </RouterLink>
         </p>
       </div>
     </div>
@@ -123,8 +127,15 @@
 </template>
 
 <script setup>
-import { Link, useForm, usePage } from '@inertiajs/vue3'
+import { useRouter } from 'vue-router'
+import { useForm } from '@/composables/useForm'
+import { useAuthStore } from '@/stores/auth'
+import { useToast } from '@/composables/useToast'
 import AuthLeftPanel from '@/components/AuthLeftPanel.vue'
+
+const router = useRouter()
+const auth = useAuthStore()
+const { showToast } = useToast()
 
 const form = useForm({
   name: '',
@@ -133,16 +144,16 @@ const form = useForm({
   password: '',
   password_confirmation: '',
 })
-const page = usePage()
 
 async function handleRegister() {
-  form
-    .transform((data) => ({
-      ...data,
-      _token: page.props.csrf_token,
-    }))
-    .post('/register', {
-      preserveScroll: true,
-    })
+  const result = await form.run((data) => auth.register(data))
+
+  // No account is created at this point. A failure here — including a mail
+  // outage — leaves nothing behind, so the user can simply submit again.
+  // form.error already carries the reason and is shown above the form.
+  if (!result) return
+
+  showToast(`We sent a 6-digit code to ${result.email}.`, 'success')
+  router.push({ name: 'verify-email' })
 }
 </script>
