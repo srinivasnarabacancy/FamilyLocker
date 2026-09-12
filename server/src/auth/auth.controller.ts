@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   HttpCode,
+  Logger,
   Post,
   Req,
   UploadedFile,
@@ -15,6 +16,14 @@ import { PrismaService } from '../common/prisma.service';
 import { StorageService } from '../common/storage.service';
 import { MailService } from '../mail/mail.service';
 import { AuthService } from './auth.service';
+import {
+  RegistrationService,
+  PendingNotFoundError,
+  OtpExpiredError,
+  OtpMismatchError,
+  OtpAttemptsExhaustedError,
+  ResendCooldownError,
+} from './registration.service';
 import { TokenService } from './token.service';
 import { AuthGuard, VerifiedGuard } from './auth.guard';
 import { hashPassword, checkPassword } from './password';
@@ -28,9 +37,12 @@ import { ApiException } from '../common/errors';
 
 @Controller('auth')
 export class AuthController {
+  private readonly logger = new Logger(AuthController.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly auth: AuthService,
+    private readonly registration: RegistrationService,
     private readonly tokens: TokenService,
     private readonly storage: StorageService,
     private readonly mail: MailService,
@@ -50,6 +62,7 @@ export class AuthController {
 
   @Post('register')
   @HttpCode(201)
+  @Throttle(5, 1)
   async register(@Body() body: any) {
     await validate(
       body,
@@ -62,47 +75,60 @@ export class AuthController {
       this.uniqueCtx(),
     );
 
-    const now = new Date();
-
-    // Laravel creates the family with created_by=0 then back-fills it; the same
-    // two-step runs here inside a transaction so a failure cannot strand an
-    // orphan family row (the Laravel API version was not transactional).
-    const user = await this.prisma.$transaction(async (tx) => {
-      const family = await tx.family.create({
-        data: { name: body.family_name, createdBy: BigInt(0), createdAt: now, updatedAt: now },
+    // No user row is created here. The details are held in
+    // pending_registrations until the emailed code is verified, so an
+    // abandoned sign-up leaves no account behind and frees the address.
+    try {
+      const { token, expiresInMinutes, expiresAt } = await this.registration.start({
+        name: body.name,
+        familyName: body.family_name,
+        email: body.email,
+        password: body.password,
       });
 
-      const created = await tx.user.create({
-        data: {
-          name: body.name,
+      return success(
+        {
+          pending_token: token,
           email: body.email,
-          password: hashPassword(body.password),
-          familyId: family.id,
-          role: ROLE_OWNER,
-          createdAt: now,
-          updatedAt: now,
+          expires_in_minutes: expiresInMinutes,
+          // ISO-8601 UTC, not the Laravel datetime cast: the client counts down
+          // against it, and an unqualified "Y-m-d H:i:s" would be read as local
+          // time by the browser.
+          otp_expires_at: expiresAt.toISOString(),
         },
-      });
+        `We sent a 6-digit code to ${body.email}. Enter it to finish creating your account.`,
+      );
+    } catch (err: any) {
+      // Delivery failed, so there is nothing for the user to enter. Nothing was
+      // created, and they can simply submit the form again.
+      this.logger.error(`Registration code could not be sent to ${body.email}: ${err?.message ?? err}`);
 
-      await tx.family.update({ where: { id: family.id }, data: { createdBy: created.id } });
+      throw new ApiException(
+        'We could not send the verification email right now. Please try again in a moment.',
+        503,
+      );
+    }
+  }
 
-      return created;
+  // ─── POST /auth/register/verify ───────────────────────────────────────────
+
+  /** Verifies the code and only then creates the family and owner account. */
+  @Post('register/verify')
+  @HttpCode(201)
+  @Throttle(10, 1)
+  async verifyRegistration(@Body() body: any) {
+    await validate(body, {
+      pending_token: 'required|string|max:64',
+      otp: 'required|string|size:6',
     });
 
-    // DEVIATION: Laravel's API called sendEmailVerificationNotification(), which
-    // sends a signed verification LINK — but routes/web.php never registered a
-    // handler for it, so that link 404s. The working path in production is the
-    // OTP flow used by the Inertia controller, so the port standardises on OTP.
+    let user;
     try {
-      await this.auth.generateAndSendOtp(user);
-    } catch {
-      // Account is created either way; the client can request a new code.
+      user = await this.registration.verify(body.pending_token, body.otp);
+    } catch (err) {
+      throw this.registrationError(err);
     }
 
-    // DEVIATION: a token is issued even though the account is unverified, so the
-    // SPA can reach the OTP screen. This mirrors the Inertia flow, which logged
-    // the user in and then relied on the `verified` middleware. Every protected
-    // endpoint stays blocked by VerifiedGuard until the code is entered.
     const token = await this.tokens.create(user.id);
     const withFamily = await this.prisma.user.findUnique({
       where: { id: user.id },
@@ -110,13 +136,61 @@ export class AuthController {
     });
 
     return success(
-      {
-        user: presentUser(withFamily),
-        token,
-        requires_verification: true,
-      },
-      'Registration successful. Please verify your email before logging in.',
+      { user: presentUser(withFamily), token },
+      'Email verified. Welcome to FamilyLocker!',
     );
+  }
+
+  // ─── POST /auth/register/resend ───────────────────────────────────────────
+
+  @Post('register/resend')
+  @HttpCode(200)
+  @Throttle(6, 1)
+  async resendRegistration(@Body() body: any) {
+    await validate(body, { pending_token: 'required|string|max:64' });
+
+    try {
+      const { email, expiresAt } = await this.registration.resend(body.pending_token);
+      return success(
+        { otp_expires_at: expiresAt.toISOString() },
+        `A new 6-digit code has been sent to ${email}.`,
+      );
+    } catch (err) {
+      throw this.registrationError(err);
+    }
+  }
+
+  /** Maps registration failures onto the API's error envelope. */
+  private registrationError(err: unknown): ApiException {
+    if (err instanceof PendingNotFoundError) {
+      return new ApiException(
+        'This sign-up has expired or was already completed. Please register again.',
+        410,
+      );
+    }
+    if (err instanceof OtpExpiredError) {
+      return new ApiException('Validation failed', 422, {
+        otp: ['That code has expired. Please request a new one.'],
+      });
+    }
+    if (err instanceof OtpAttemptsExhaustedError) {
+      return new ApiException('Validation failed', 422, {
+        otp: ['Too many incorrect attempts. Please register again to get a new code.'],
+      });
+    }
+    if (err instanceof OtpMismatchError) {
+      return new ApiException('Validation failed', 422, {
+        otp: [
+          `That code is not correct. ${err.attemptsRemaining} attempt(s) remaining.`,
+        ],
+      });
+    }
+    if (err instanceof ResendCooldownError) {
+      return new ApiException(err.message, 429);
+    }
+
+    this.logger.error(`Registration failed: ${err instanceof Error ? err.message : String(err)}`);
+    return new ApiException('Something went wrong. Please try again.', 500);
   }
 
   // ─── POST /auth/login ─────────────────────────────────────────────────────
@@ -144,14 +218,21 @@ export class AuthController {
     const token = await this.tokens.create(user.id);
 
     if (!AuthService.hasVerifiedEmail(user)) {
+      let otpExpiresAt: Date | null = null;
+
       try {
-        await this.auth.generateAndSendOtp(user);
+        otpExpiresAt = await this.auth.generateAndSendOtp(user);
       } catch {
         // Fall through; the client can request another code.
       }
 
       return success(
-        { user: presentUser(user), token, requires_verification: true },
+        {
+          user: presentUser(user),
+          token,
+          requires_verification: true,
+          otp_expires_at: otpExpiresAt?.toISOString() ?? null,
+        },
         'Please verify your email before continuing.',
       );
     }
@@ -219,9 +300,22 @@ export class AuthController {
       throw new ApiException('This account does not have an email address to verify.', 400);
     }
 
-    await this.auth.generateAndSendOtp(user);
+    let otpExpiresAt: Date | null;
 
-    return success(null, 'Verification email sent successfully.');
+    try {
+      otpExpiresAt = await this.auth.generateAndSendOtp(user);
+    } catch (err: any) {
+      this.logger.error(`Resend failed for ${user.email}: ${err?.message ?? err}`);
+      throw new ApiException(
+        'We could not send the verification email right now. Please try again in a moment.',
+        503,
+      );
+    }
+
+    return success(
+      { otp_expires_at: otpExpiresAt?.toISOString() ?? null },
+      `A new 6-digit code has been sent to ${user.email}.`,
+    );
   }
 
   // ─── POST /auth/profile ───────────────────────────────────────────────────

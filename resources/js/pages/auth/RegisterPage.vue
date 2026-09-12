@@ -130,10 +130,12 @@
 import { useRouter } from 'vue-router'
 import { useForm } from '@/composables/useForm'
 import { useAuthStore } from '@/stores/auth'
+import { useToast } from '@/composables/useToast'
 import AuthLeftPanel from '@/components/AuthLeftPanel.vue'
 
 const router = useRouter()
 const auth = useAuthStore()
+const { showToast } = useToast()
 
 const form = useForm({
   name: '',
@@ -145,9 +147,13 @@ const form = useForm({
 
 async function handleRegister() {
   const result = await form.run((data) => auth.register(data))
+
+  // No account is created at this point. A failure here — including a mail
+  // outage — leaves nothing behind, so the user can simply submit again.
+  // form.error already carries the reason and is shown above the form.
   if (!result) return
 
-  // Registration always sends an OTP, so the next stop is the verify screen.
+  showToast(`We sent a 6-digit code to ${result.email}.`, 'success')
   router.push({ name: 'verify-email' })
 }
 </script>

@@ -348,3 +348,27 @@ model PersonalAccessToken {
   @@index([tokenableType, tokenableId])
   @@map("personal_access_tokens")
 }
+
+/// A sign-up held between "Create Account" and successful OTP entry.
+/// No `users` row exists until the code is verified, so an abandoned or
+/// mistyped registration leaves no account behind and frees the address.
+model PendingRegistration {
+  id           BigInt    @id @default(autoincrement())
+  /// Opaque handle held by the browser; identifies the sign-up without
+  /// exposing the row id.
+  token        String    @unique @db.VarChar(64)
+  name         String    @db.VarChar(255)
+  familyName   String    @map("family_name") @db.VarChar(255)
+  email        String    @unique @db.VarChar(255)
+  /// Already bcrypt-hashed by the API — plaintext is never stored.
+  password     String    @db.VarChar(255)
+  otpCode      String    @map("otp_code") @db.VarChar(6)
+  otpExpiresAt DateTime  @map("otp_expires_at") @db.Timestamp(0)
+  attempts     Int       @default(0) @db.SmallInt
+  lastSentAt   DateTime? @map("last_sent_at") @db.Timestamp(0)
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt    DateTime  @default(now()) @map("updated_at") @db.Timestamp(0)
+
+  @@index([otpExpiresAt])
+  @@map("pending_registrations")
+}
