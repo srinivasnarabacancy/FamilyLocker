@@ -171,25 +171,27 @@
       :subtitle="editing ? 'Update the reminder details.' : 'Add a birthday, anniversary or special occasion.'"
       icon="bi bi-bell"
     >
-      <form id="reminderForm" @submit.prevent="handleSubmit">
+      <form id="reminderForm" novalidate @submit.prevent="handleSubmit">
         <div class="row g-3">
-          <div class="col-12">
-            <label class="form-label fw-semibold">Title <span class="text-danger">*</span></label>
-            <input v-model="form.title" type="text" class="form-control" placeholder="e.g. Mom's Birthday" required />
-          </div>
-          <div class="col-12 col-md-6">
-            <label class="form-label fw-semibold">Type</label>
-            <select v-model="form.type" class="form-select">
-              <option value="birthday">🎂 Birthday</option>
-              <option value="anniversary">💞 Anniversary</option>
-              <option value="holiday">⭐ Holiday</option>
-              <option value="other">🔔 Other</option>
-            </select>
-          </div>
-          <div class="col-12 col-md-6">
-            <label class="form-label fw-semibold">Occasion Date <span class="text-danger">*</span></label>
-            <input v-model="form.occasion_date" type="date" class="form-control" required />
-          </div>
+          <FormField required label="Title" :error="errors.title" field="title" class="col-12">
+            <template #default="{ id }">
+              <input :id="id" v-model="form.title" type="text" class="form-control" placeholder="e.g. Mom's Birthday" />
+            </template>
+          </FormField>
+          <FormField label="Type" :error="errors.type" field="type" class="col-12 col-md-6">
+            <template #default="{ id }">
+              <SelectField
+                :id="id"
+                v-model="form.type"
+                :options="[{ value: 'birthday', label: '🎂 Birthday' }, { value: 'anniversary', label: '💞 Anniversary' }, { value: 'holiday', label: '⭐ Holiday' }, { value: 'other', label: '🔔 Other' }]"
+              />
+            </template>
+          </FormField>
+          <FormField required label="Occasion Date" :error="errors.occasion_date" field="occasion_date" class="col-12 col-md-6">
+            <template #default="{ id }">
+              <input :id="id" v-model="form.occasion_date" type="date" class="form-control" />
+            </template>
+          </FormField>
           <div class="col-12 col-md-6">
             <label class="form-label fw-semibold">Remind Days Before</label>
             <input v-model.number="form.remind_days_before" type="number" min="0" max="365" class="form-control" />
@@ -201,10 +203,11 @@
               <label class="form-check-label fw-semibold" for="recurYearly">Recurs Yearly</label>
             </div>
           </div>
-          <div class="col-12">
-            <label class="form-label fw-semibold">Description</label>
-            <textarea v-model="form.description" rows="3" class="form-control" placeholder="Optional notes…" />
-          </div>
+          <FormField label="Description" :error="errors.description" field="description" class="col-12">
+            <template #default="{ id }">
+              <textarea :id="id" v-model="form.description" rows="3" class="form-control" placeholder="Optional notes…" />
+            </template>
+          </FormField>
           <div class="col-12">
             <div class="form-check form-switch">
               <input v-model="form.is_active" class="form-check-input" type="checkbox" id="isActive" />
@@ -223,17 +226,37 @@
       </template>
     </AppOffcanvas>
   </div>
+
+    <!-- Shared confirmation modal — see components/ConfirmModal.vue -->
+    <ConfirmModal
+      v-model="showDeleteModal"
+      :title="`Delete ${reminderToDelete?.title}?`"
+      message="This reminder will be permanently deleted and cannot be recovered."
+      confirm-text="Delete"
+      cancel-text="Cancel"
+      icon="bi bi-trash"
+      variant="danger"
+      :loading="deleting"
+      @confirm="handleConfirmDelete"
+    />
 </template>
 
 <script setup>
-import { reactive, ref, computed, onMounted } from 'vue'
+import { reactive, ref, computed, onMounted, provide} from 'vue'
 import { useReminderStore } from '@/stores/reminders'
 import { useToast } from '@/composables/useToast'
 import ShimmerLoader from '@/components/ShimmerLoader.vue'
+import ConfirmModal from '@/components/ConfirmModal.vue'
 import AppOffcanvas from '@/components/AppOffcanvas.vue'
+import FormField from '@/components/FormField.vue'
+import SelectField from '@/components/SelectField.vue'
+import { useFormErrors } from '@/composables/useFormErrors'
 
 const store = useReminderStore()
 const { showToast } = useToast()
+const { errors, clear: clearErrors, capture: captureErrors, clearField } = useFormErrors()
+// FormField clears its own message as the user edits.
+provide('clearFormField', clearField)
 
 const filters = reactive({ type: '', is_active: '' })
 const form = reactive({
@@ -328,6 +351,7 @@ async function fetchReminders() {
 // ── Offcanvas ─────────────────────────────────────────────────────────────────
 
 function openModal(reminder = null) {
+  clearErrors()
   editing.value = reminder
   if (reminder) {
     Object.assign(form, {
@@ -354,6 +378,7 @@ function openModal(reminder = null) {
 }
 
 async function handleSubmit() {
+  clearErrors()
   formLoading.value = true
   try {
     if (editing.value) {
@@ -366,17 +391,32 @@ async function handleSubmit() {
     showOffcanvas.value = false
     fetchReminders()
   } catch (err) {
-    showToast(err.response?.data?.message ?? 'Error saving reminder', 'danger')
+    // 422 means per-field messages; anything else is a real failure.
+    if (!captureErrors(err)) showToast(err.response?.data?.message ?? 'Error saving reminder', 'danger')
   } finally {
     formLoading.value = false
   }
 }
 
 async function confirmDelete(reminder) {
-  if (!confirm(`Delete reminder "${reminder.title}"?`)) return
-  await store.deleteReminder(reminder.id)
-  showToast('Reminder deleted', 'success')
+  reminderToDelete.value = reminder
+  showDeleteModal.value = true
+}
+
+async function handleConfirmDelete() {
+  if (!reminderToDelete.value) return
+
+  deleting.value = true
+  try {
+    await store.deleteReminder(target.value.id)
+    showToast('Reminder deleted', 'success')
+    showDeleteModal.value = false
   fetchReminders()
+  } catch {
+    showToast('Failed to delete', 'danger')
+  } finally {
+    deleting.value = false
+  }
 }
 
 onMounted(() => {

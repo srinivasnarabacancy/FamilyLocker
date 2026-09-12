@@ -39,17 +39,22 @@
     <!-- Filters -->
     <div class="fl-card p-3 mb-4">
       <div class="row g-2 align-items-end">
-        <div class="col-12 col-sm-6 col-md-3">
-          <label class="form-label">Month</label>
-          <input v-model="filters.month" type="month" class="form-control" @change="fetchAll" />
-        </div>
-        <div class="col-6 col-md-3">
-          <label class="form-label">Category</label>
-          <select v-model="filters.category_id" class="form-select" @change="fetchExpenses">
-            <option value="">All Categories</option>
-            <option v-for="c in store.categories" :key="c.id" :value="c.id">{{ c.name }}</option>
-          </select>
-        </div>
+        <FormField label="Month" :error="errors.month" field="month" class="col-12 col-sm-6 col-md-3">
+          <template #default="{ id }">
+            <input :id="id" v-model="filters.month" type="month" class="form-control" @change="fetchAll" />
+          </template>
+        </FormField>
+        <FormField label="Category" :error="errors.category_id" field="category_id" class="col-6 col-md-3">
+          <template #default="{ id }">
+            <SelectField
+              :id="id"
+              v-model="filters.category_id"
+              @change="fetchExpenses"
+              :options="store.categories" value-key="id" label-key="name"
+              placeholder="All Categories"
+            />
+          </template>
+        </FormField>
         <div class="col-6 col-md-2">
           <button class="btn btn-outline-secondary w-100" @click="resetFilters">Clear</button>
         </div>
@@ -117,40 +122,47 @@
             <button type="button" class="btn-close" data-bs-dismiss="modal" />
           </div>
           <div class="modal-body">
-            <form id="expForm" @submit.prevent="handleSubmit">
+            <form id="expForm" novalidate @submit.prevent="handleSubmit">
               <div class="row g-3">
-                <div class="col-12">
-                  <label class="form-label">Title *</label>
-                  <input v-model="form.title" type="text" class="form-control" required />
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label">Amount (₹) *</label>
-                  <input v-model="form.amount" type="number" step="0.01" class="form-control" required />
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label">Date *</label>
-                  <input v-model="form.date" type="date" class="form-control" required />
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label">Category</label>
-                  <select v-model="form.category_id" class="form-select">
-                    <option value="">None</option>
-                    <option v-for="c in store.categories" :key="c.id" :value="c.id">{{ c.name }}</option>
-                  </select>
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label">Payment Method</label>
-                  <select v-model="form.payment_method" class="form-select">
-                    <option value="cash">Cash</option>
-                    <option value="card">Card</option>
-                    <option value="upi">UPI</option>
-                    <option value="net_banking">Net Banking</option>
-                  </select>
-                </div>
-                <div class="col-12">
-                  <label class="form-label">Description</label>
-                  <textarea v-model="form.description" rows="2" class="form-control" />
-                </div>
+                <FormField label="Title" required :error="errors.title" field="title" class="col-12">
+                  <template #default="{ id }">
+                    <input :id="id" v-model="form.title" type="text" class="form-control" />
+                  </template>
+                </FormField>
+                <FormField label="Amount (₹)" required :error="errors.amount" field="amount" class="col-md-6">
+                  <template #default="{ id }">
+                    <input :id="id" v-model="form.amount" type="number" step="0.01" class="form-control" />
+                  </template>
+                </FormField>
+                <FormField label="Date" required :error="errors.date" field="date" class="col-md-6">
+                  <template #default="{ id }">
+                    <input :id="id" v-model="form.date" type="date" class="form-control" />
+                  </template>
+                </FormField>
+                <FormField label="Category" :error="errors.category_id" field="category_id" class="col-md-6">
+                  <template #default="{ id }">
+                    <SelectField
+                      :id="id"
+                      v-model="form.category_id"
+                      :options="store.categories" value-key="id" label-key="name"
+                      placeholder="None"
+                    />
+                  </template>
+                </FormField>
+                <FormField label="Payment Method" :error="errors.payment_method" field="payment_method" class="col-md-6">
+                  <template #default="{ id }">
+                    <SelectField
+                      :id="id"
+                      v-model="form.payment_method"
+                      :options="[{ value: 'cash', label: 'Cash' }, { value: 'card', label: 'Card' }, { value: 'upi', label: 'UPI' }, { value: 'net_banking', label: 'Net Banking' }]"
+                    />
+                  </template>
+                </FormField>
+                <FormField label="Description" :error="errors.description" field="description" class="col-12">
+                  <template #default="{ id }">
+                    <textarea :id="id" v-model="form.description" rows="2" class="form-control" />
+                  </template>
+                </FormField>
               </div>
             </form>
           </div>
@@ -165,21 +177,41 @@
       </div>
     </div>
   </div>
+
+    <!-- Shared confirmation modal — see components/ConfirmModal.vue -->
+    <ConfirmModal
+      v-model="showDeleteModal"
+      :title="`Delete ${expenseToDelete?.title}?`"
+      message="This expense will be permanently deleted and cannot be recovered."
+      confirm-text="Delete"
+      cancel-text="Cancel"
+      icon="bi bi-trash"
+      variant="danger"
+      :loading="deleting"
+      @confirm="handleConfirmDelete"
+    />
 </template>
 
 <script setup>
-import { reactive, ref, computed, onMounted } from 'vue'
+import { reactive, ref, computed, onMounted, provide} from 'vue'
 import { Modal } from 'bootstrap'
 import { Doughnut } from 'vue-chartjs'
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js'
 import { useExpenseStore } from '@/stores/expenses'
 import { useToast } from '@/composables/useToast'
 import ShimmerLoader from '@/components/ShimmerLoader.vue'
+import ConfirmModal from '@/components/ConfirmModal.vue'
+import FormField from '@/components/FormField.vue'
+import SelectField from '@/components/SelectField.vue'
+import { useFormErrors } from '@/composables/useFormErrors'
 
 ChartJS.register(ArcElement, Tooltip, Legend)
 
 const store = useExpenseStore()
 const { showToast } = useToast()
+const { errors, clear: clearErrors, capture: captureErrors, clearField } = useFormErrors()
+// FormField clears its own message as the user edits.
+provide('clearFormField', clearField)
 let modalInstance = null
 
 const showSummary = ref(true)
@@ -231,6 +263,7 @@ async function fetchExpenses() {
 }
 
 function openModal(exp = null) {
+  clearErrors()
   editing.value = exp
   if (exp) {
     Object.assign(form, {
@@ -244,6 +277,7 @@ function openModal(exp = null) {
 }
 
 async function handleSubmit() {
+  clearErrors()
   formLoading.value = true
   try {
     if (editing.value) {
@@ -256,17 +290,36 @@ async function handleSubmit() {
     modalInstance?.hide()
     fetchAll()
   } catch (err) {
-    showToast(err.response?.data?.message ?? 'Error', 'danger')
+    // 422 means per-field messages; anything else is a real failure.
+    if (!captureErrors(err)) showToast(err.response?.data?.message ?? 'Error', 'danger')
   } finally {
     formLoading.value = false
   }
 }
 
+const showDeleteModal = ref(false)
+const expToDelete = ref(null)
+const deleting = ref(false)
+
 async function deleteExpense(exp) {
-  if (!confirm(`Delete expense "${exp.title}"?`)) return
-  await store.deleteExpense(exp.id)
-  showToast('Expense deleted', 'success')
+  expToDelete.value = exp
+  showDeleteModal.value = true
+}
+
+async function handleConfirmDelete() {
+  if (!expToDelete.value) return
+
+  deleting.value = true
+  try {
+    await store.deleteExpense(target.value.id)
+    showToast('Expense deleted', 'success')
+    showDeleteModal.value = false
   fetchAll()
+  } catch {
+    showToast('Failed to delete', 'danger')
+  } finally {
+    deleting.value = false
+  }
 }
 
 onMounted(async () => {

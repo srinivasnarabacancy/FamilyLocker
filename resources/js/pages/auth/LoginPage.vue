@@ -20,46 +20,44 @@
           <i class="bi bi-exclamation-circle me-1" />{{ form.error }}
         </div>
 
-        <form @submit.prevent="handleLogin">
-          <div class="mb-3">
-            <label class="form-label fw-semibold">Email Address</label>
-            <div class="input-icon-wrap">
-              <i class="bi bi-envelope input-icon"></i>
-              <input
-                v-model="form.email"
-                type="email"
-                class="form-control form-control-lg ps-5"
-                :class="{ 'is-invalid': form.errors.email }"
-                placeholder="you@example.com"
-                required
-              />
-            </div>
-            <div v-if="form.errors.email" class="invalid-feedback d-block">{{ form.errors.email }}</div>
-          </div>
+        <form novalidate @submit.prevent="handleLogin">
+          <FormField label="Email Address" required :error="form.errors.email" field="email" class="mb-3">
+            <template #default="{ id }">
+              <div class="input-icon-wrap">
+                <i class="bi bi-envelope input-icon"></i>
+                <input :id="id"
+                  v-model="form.email"
+                  type="email"
+                  class="form-control form-control-lg ps-5"
+                  placeholder="you@example.com"
+                  required
+                />
+              </div>
+            </template>
+          </FormField>
 
-          <div class="mb-4">
-            <label class="form-label fw-semibold">Password</label>
-            <div class="input-icon-wrap">
-              <i class="bi bi-lock input-icon"></i>
-              <input
-                v-model="form.password"
-                :type="showPassword ? 'text' : 'password'"
-                class="form-control form-control-lg ps-5 pe-5"
-                :class="{ 'is-invalid': form.errors.password }"
-                placeholder="Enter your password"
-                required
-              />
-              <button
-                type="button"
-                class="password-toggle"
-                @click="showPassword = !showPassword"
-                tabindex="-1"
-              >
-                <i :class="showPassword ? 'bi bi-eye-slash' : 'bi bi-eye'" />
-              </button>
-            </div>
-            <div v-if="form.errors.password" class="invalid-feedback d-block">{{ form.errors.password }}</div>
-          </div>
+          <FormField label="Password" required :error="form.errors.password" field="password" class="mb-4">
+            <template #default="{ id }">
+              <div class="input-icon-wrap">
+                <i class="bi bi-lock input-icon"></i>
+                <input :id="id"
+                  v-model="form.password"
+                  :type="showPassword ? 'text' : 'password'"
+                  class="form-control form-control-lg ps-5 pe-5"
+                  placeholder="Enter your password"
+                  required
+                />
+                <button
+                  type="button"
+                  class="password-toggle"
+                  @click="showPassword = !showPassword"
+                  tabindex="-1"
+                >
+                  <i :class="showPassword ? 'bi bi-eye-slash' : 'bi bi-eye'" />
+                </button>
+              </div>
+            </template>
+          </FormField>
 
           <button
             type="submit"
@@ -86,16 +84,20 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, provide} from 'vue'
 import { useRouter } from 'vue-router'
 import { useForm } from '@/composables/useForm'
 import { useAuthStore } from '@/stores/auth'
 import AuthLeftPanel from '@/components/AuthLeftPanel.vue'
+import FormField from '@/components/FormField.vue'
 
 const router = useRouter()
 const auth = useAuthStore()
 
 const form = useForm({ email: '', password: '' })
+
+// FormField clears its own message as the user edits.
+provide('clearFormField', (field) => form.clearField(field))
 const showPassword = ref(false)
 
 async function handleLogin() {

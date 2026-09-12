@@ -50,6 +50,15 @@ export function useForm(initial = {}) {
       return form
     },
 
+    /** Clears one field, so its message disappears as the user edits it. */
+    clearField(field) {
+      if (form.errors[field]) {
+        const next = { ...form.errors }
+        delete next[field]
+        form.errors = next
+      }
+    },
+
     async submit(method, url, options = {}) {
       form.processing = true
       form.clearErrors()

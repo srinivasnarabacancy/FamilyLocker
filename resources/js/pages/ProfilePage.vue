@@ -55,31 +55,37 @@
       <div class="col-12 col-md-8">
         <div class="fl-card p-4 mb-4">
           <h6 class="fw-bold mb-3">Personal Information</h6>
-          <form @submit.prevent="saveProfile">
+          <form novalidate @submit.prevent="saveProfile">
             <div class="row g-3">
-              <div class="col-md-6">
-                <label class="form-label">Full Name *</label>
-                <input v-model="profileForm.name" type="text" class="form-control" required />
-              </div>
+              <FormField label="Full Name" required :error="errors.name" field="name" class="col-md-6">
+                <template #default="{ id }">
+                  <input :id="id" v-model="profileForm.name" type="text" class="form-control" />
+                </template>
+              </FormField>
               <div class="col-md-6">
                 <label class="form-label">Email</label>
                 <input :value="user.email" type="email" class="form-control" readonly disabled />
               </div>
-              <div class="col-md-6">
-                <label class="form-label">Phone</label>
-                <input v-model="profileForm.phone" type="tel" class="form-control" placeholder="+91 XXXXX XXXXX" />
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Date of Birth</label>
-                <input v-model="profileForm.date_of_birth" type="date" class="form-control" />
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Relation in Family</label>
-                <select v-model="profileForm.relation" class="form-select">
-                  <option value="">Select</option>
-                  <option v-for="r in relations" :key="r" :value="r">{{ r }}</option>
-                </select>
-              </div>
+              <FormField label="Phone" :error="errors.phone" field="phone" class="col-md-6">
+                <template #default="{ id }">
+                  <input :id="id" v-model="profileForm.phone" type="tel" class="form-control" placeholder="+91 XXXXX XXXXX" />
+                </template>
+              </FormField>
+              <FormField label="Date of Birth" :error="errors.date_of_birth" field="date_of_birth" class="col-md-6">
+                <template #default="{ id }">
+                  <input :id="id" v-model="profileForm.date_of_birth" type="date" class="form-control" />
+                </template>
+              </FormField>
+              <FormField label="Relation in Family" :error="errors.relation" field="relation" class="col-md-6">
+                <template #default="{ id }">
+                  <SelectField
+                    :id="id"
+                    v-model="profileForm.relation"
+                    :options="relations"
+                    placeholder="Select"
+                  />
+                </template>
+              </FormField>
               <div class="col-12">
                 <button type="submit" class="btn btn-primary" :disabled="savingProfile">
                   <span v-if="savingProfile" class="spinner-border spinner-border-sm me-2" />
@@ -93,51 +99,59 @@
         <!-- Change Password -->
         <div class="fl-card p-4">
           <h6 class="fw-bold mb-3">Change Password</h6>
-          <form @submit.prevent="changePassword">
+          <form novalidate @submit.prevent="changePassword">
             <div class="row g-3">
-              <div class="col-md-6">
-                <label class="form-label">Current Password *</label>
-                <div class="input-group">
-                  <input
-                    v-model="pwdForm.current_password"
-                    :type="showPwd.current ? 'text' : 'password'"
-                    class="form-control"
-                    required
-                  />
-                  <button type="button" class="btn btn-outline-secondary" @click="showPwd.current = !showPwd.current">
-                    <i :class="showPwd.current ? 'bi bi-eye-slash' : 'bi bi-eye'" />
-                  </button>
-                </div>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">New Password *</label>
-                <div class="input-group">
-                  <input
-                    v-model="pwdForm.password"
-                    :type="showPwd.new ? 'text' : 'password'"
-                    class="form-control"
-                    required
-                    minlength="8"
-                  />
-                  <button type="button" class="btn btn-outline-secondary" @click="showPwd.new = !showPwd.new">
-                    <i :class="showPwd.new ? 'bi bi-eye-slash' : 'bi bi-eye'" />
-                  </button>
-                </div>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Confirm Password *</label>
-                <div class="input-group">
-                  <input
-                    v-model="pwdForm.password_confirmation"
-                    :type="showPwd.confirm ? 'text' : 'password'"
-                    class="form-control"
-                    required
-                  />
-                  <button type="button" class="btn btn-outline-secondary" @click="showPwd.confirm = !showPwd.confirm">
-                    <i :class="showPwd.confirm ? 'bi bi-eye-slash' : 'bi bi-eye'" />
-                  </button>
-                </div>
-              </div>
+              <FormField label="Current Password" required :error="errors.current_password" field="current_password" class="col-md-6">
+                <template #default="{ id }">
+                  <div class="input-group">
+                    <input :id="id"
+                      v-model="pwdForm.current_password"
+                      :type="showPwd.current ? 'text' : 'password'"
+                      class="form-control"
+                      required
+                    />
+                    <button type="button" class="btn btn-outline-secondary" @click="showPwd.current = !showPwd.current">
+                      <i :class="showPwd.current ? 'bi bi-eye-slash' : 'bi bi-eye'" />
+                    </button>
+                  </div>
+                </template>
+              </FormField>
+              <FormField label="New Password" required :error="errors.password" field="password" class="col-md-6">
+                <template #default="{ id }">
+                  <div class="input-group">
+                    <input :id="id"
+                      v-model="pwdForm.password"
+                      :type="showPwd.new ? 'text' : 'password'"
+                      class="form-control"
+                      required
+                      minlength="8"
+                    />
+                    <button type="button" class="btn btn-outline-secondary" @click="showPwd.new = !showPwd.new">
+                      <i :class="showPwd.new ? 'bi bi-eye-slash' : 'bi bi-eye'" />
+                    </button>
+                  </div>
+                </template>
+              </FormField>
+              <FormField
+                label="Confirm Password"
+                required
+                :error="errors.password_confirmation" field="password_confirmation"
+                class="col-md-6"
+              >
+                <template #default="{ id }">
+                  <div class="input-group">
+                    <input :id="id"
+                      v-model="pwdForm.password_confirmation"
+                      :type="showPwd.confirm ? 'text' : 'password'"
+                      class="form-control"
+                      required
+                    />
+                    <button type="button" class="btn btn-outline-secondary" @click="showPwd.confirm = !showPwd.confirm">
+                      <i :class="showPwd.confirm ? 'bi bi-eye-slash' : 'bi bi-eye'" />
+                    </button>
+                  </div>
+                </template>
+              </FormField>
               <div v-if="pwdError" class="col-12">
                 <div class="alert alert-danger py-2 small mb-0">{{ pwdError }}</div>
               </div>
@@ -153,17 +167,37 @@
       </div>
     </div>
   </div>
+
+    <!-- Shared confirmation modal — see components/ConfirmModal.vue -->
+    <ConfirmModal
+      v-model="showRemoveAvatarModal"
+      title="Remove your profile photo?"
+      message="Your profile photo will be removed. You can upload a new one at any time."
+      confirm-text="Remove"
+      cancel-text="Cancel"
+      icon="bi bi-person-x"
+      variant="danger"
+      :loading="removingAvatar"
+      @confirm="handleConfirmRemoveAvatar"
+    />
 </template>
 
 <script setup>
-import { reactive, ref, computed, watch } from 'vue'
+import { reactive, ref, computed, watch, provide} from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useToast } from '@/composables/useToast'
+import ConfirmModal from '@/components/ConfirmModal.vue'
 import { formatRoleLabel } from '@/constants/roles'
 import api from '@/services/api'
+import FormField from '@/components/FormField.vue'
+import SelectField from '@/components/SelectField.vue'
+import { useFormErrors } from '@/composables/useFormErrors'
 
 const auth = useAuthStore()
 const { showToast } = useToast()
+const { errors, clear: clearErrors, capture: captureErrors, clearField } = useFormErrors()
+// FormField clears its own message as the user edits.
+provide('clearFormField', clearField)
 
 const user = computed(() => auth.user ?? {})
 
@@ -211,7 +245,8 @@ async function saveProfile() {
     await auth.fetchMe()
     showToast('Profile updated!', 'success')
   } catch (err) {
-    showToast(err.response?.data?.message ?? 'Failed to update', 'danger')
+    // 422 means per-field messages; anything else is a real failure.
+    if (!captureErrors(err)) showToast(err.response?.data?.message ?? 'Failed to update', 'danger')
   } finally {
     savingProfile.value = false
   }
@@ -268,24 +303,32 @@ async function uploadAvatar() {
     avatarPreview.value = null
     showToast('Avatar updated!', 'success')
   } catch (err) {
-    showToast(getErrorMessage(err, 'Failed to upload avatar'), 'danger')
+    // 422 means per-field messages; anything else is a real failure.
+    if (!captureErrors(err)) showToast(getErrorMessage(err, 'Failed to upload avatar'), 'danger')
   } finally {
     uploadingAvatar.value = false
   }
 }
 
-async function removeAvatar() {
-  if (!user.value.avatar || !window.confirm('Remove your current avatar?')) return
+const showRemoveAvatarModal = ref(false)
 
+function removeAvatar() {
+  if (!user.value.avatar) return
+  showRemoveAvatarModal.value = true
+}
+
+async function handleConfirmRemoveAvatar() {
   removingAvatar.value = true
   try {
     await api.post('/auth/profile', { remove_avatar: true })
     await auth.fetchMe()
     pendingAvatar.value = null
     avatarPreview.value = null
+    showRemoveAvatarModal.value = false
     showToast('Avatar removed!', 'success')
   } catch (err) {
-    showToast(getErrorMessage(err, 'Failed to remove avatar'), 'danger')
+    // 422 means per-field messages; anything else is a real failure.
+    if (!captureErrors(err)) showToast(getErrorMessage(err, 'Failed to remove avatar'), 'danger')
   } finally {
     removingAvatar.value = false
   }

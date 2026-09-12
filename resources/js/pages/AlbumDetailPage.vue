@@ -83,6 +83,19 @@
       />
     </div>
   </div>
+
+    <!-- Shared confirmation modal — see components/ConfirmModal.vue -->
+    <ConfirmModal
+      v-model="showDeleteModal"
+      title="Delete this photo?"
+      message="This photo will be permanently deleted and cannot be recovered."
+      confirm-text="Delete"
+      cancel-text="Cancel"
+      icon="bi bi-trash"
+      variant="danger"
+      :loading="deleting"
+      @confirm="handleConfirmDelete"
+    />
 </template>
 
 <script setup>
@@ -91,6 +104,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useAlbumStore } from '@/stores/albums'
 import { useToast } from '@/composables/useToast'
 import ShimmerLoader from '@/components/ShimmerLoader.vue'
+import ConfirmModal from '@/components/ConfirmModal.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -136,13 +150,27 @@ async function handleUpload(e) {
   }
 }
 
+const showDeleteModal = ref(false)
+const photoToDelete = ref(null)
+const deleting = ref(false)
+
 async function deletePhoto(photo) {
-  if (!confirm('Delete this photo?')) return
+  photoToDelete.value = photo
+  showDeleteModal.value = true
+}
+
+async function handleConfirmDelete() {
+  if (!photoToDelete.value) return
+
+  deleting.value = true
   try {
-    await store.deletePhoto(photo.id)
+    await store.deletePhoto(photoToDelete.value.id)
     showToast('Photo deleted', 'success')
+    showDeleteModal.value = false
   } catch {
     showToast('Failed to delete', 'danger')
+  } finally {
+    deleting.value = false
   }
 }
 

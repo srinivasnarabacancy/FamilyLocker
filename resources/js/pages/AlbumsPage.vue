@@ -35,23 +35,34 @@
             <div v-else class="w-100 h-100 d-flex align-items-center justify-content-center">
               <i class="bi bi-images text-muted" style="font-size:3rem" />
             </div>
-            <div class="position-absolute top-0 end-0 p-2">
-              <div class="dropdown" @click.stop>
-                <button class="btn btn-sm btn-light rounded-circle btn-icon" data-bs-toggle="dropdown">
-                  <i class="bi bi-three-dots-vertical" />
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end">
-                  <li><a class="dropdown-item" href="#" @click.prevent="goToAlbum(album)"><i class="bi bi-images me-2" />Open Album</a></li>
-                  <li><a class="dropdown-item" href="#" @click.prevent="openModal(album)"><i class="bi bi-pencil me-2" />Edit</a></li>
-                  <li><a class="dropdown-item text-danger" href="#" @click.prevent="deleteAlbum(album)"><i class="bi bi-trash me-2" />Delete</a></li>
-                </ul>
-              </div>
-            </div>
           </div>
           <!-- Info -->
-          <div class="p-3" @click="goToAlbum(album)">
-            <h6 class="fw-bold mb-1">{{ album.name }}</h6>
-            <div class="d-flex align-items-center justify-content-between">
+          <div class="p-3">
+            <div class="d-flex align-items-start justify-content-between gap-2 mb-1">
+              <h6 class="fw-bold mb-0 text-truncate" @click="goToAlbum(album)">{{ album.name }}</h6>
+              <div class="d-flex align-items-center gap-1 flex-shrink-0">
+                <!-- Rename. .stop keeps the click off the card, which navigates. -->
+                <button
+                  type="button"
+                  class="btn btn-sm btn-link p-0 text-muted album-action"
+                  title="Rename album"
+                  aria-label="Rename album"
+                  @click.stop="openModal(album)"
+                >
+                  <i class="bi bi-pencil" />
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-sm btn-link p-0 text-danger album-action"
+                  title="Delete album"
+                  aria-label="Delete album"
+                  @click.stop="deleteAlbum(album)"
+                >
+                  <i class="bi bi-trash" />
+                </button>
+              </div>
+            </div>
+            <div class="d-flex align-items-center justify-content-between" @click="goToAlbum(album)">
               <span class="text-muted small">{{ album.photos_count ?? 0 }} photos</span>
               <span class="text-muted small">{{ formatDate(album.created_at) }}</span>
             </div>
@@ -76,47 +87,64 @@
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title">{{ editing ? 'Edit' : 'Create' }} Album</h5>
+            <h5 class="modal-title">{{ editing ? 'Rename' : 'Create' }} Album</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" />
           </div>
           <div class="modal-body">
-            <form id="albumForm" @submit.prevent="handleSubmit">
-              <div class="mb-3">
-                <label class="form-label">Album Name *</label>
-                <input v-model="form.name" type="text" class="form-control" required placeholder="e.g. Summer Vacation 2024" />
-              </div>
-              <div class="mb-3">
-                <label class="form-label">Description</label>
-                <textarea v-model="form.description" rows="2" class="form-control" />
-              </div>
+            <form id="albumForm" novalidate @submit.prevent="handleSubmit">
+              <FormField label="Album Name" required :error="errors.name" field="name" class="mb-3">
+                <template #default="{ id }">
+                  <input :id="id" v-model="form.name" type="text" class="form-control" placeholder="e.g. Summer Vacation 2024" />
+                </template>
+              </FormField>
             </form>
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
             <button type="submit" form="albumForm" class="btn btn-primary" :disabled="formLoading">
               <span v-if="formLoading" class="spinner-border spinner-border-sm me-2" />
-              {{ editing ? 'Update' : 'Create' }}
+              {{ editing ? 'Save' : 'Create' }}
             </button>
           </div>
         </div>
       </div>
     </div>
   </div>
+
+    <!-- Shared confirmation modal — see components/ConfirmModal.vue -->
+    <ConfirmModal
+      v-model="showDeleteModal"
+      :title="`Delete ${albumToDelete?.name}?`"
+      message="Every photo in this album will be permanently deleted and cannot be recovered."
+      confirm-text="Delete"
+      cancel-text="Cancel"
+      icon="bi bi-trash"
+      variant="danger"
+      :loading="deleting"
+      @confirm="handleConfirmDelete"
+    />
 </template>
 
 <script setup>
-import { reactive, ref, onMounted } from 'vue'
+import { reactive, ref, onMounted, provide} from 'vue'
 import { useRouter } from 'vue-router'
 import { Modal } from 'bootstrap'
 import { useAlbumStore } from '@/stores/albums'
 import { useToast } from '@/composables/useToast'
 import ShimmerLoader from '@/components/ShimmerLoader.vue'
+import ConfirmModal from '@/components/ConfirmModal.vue'
+import FormField from '@/components/FormField.vue'
+import { useFormErrors } from '@/composables/useFormErrors'
 
+const router = useRouter()
 const store = useAlbumStore()
 const { showToast } = useToast()
+const { errors, clear: clearErrors, capture: captureErrors, clearField } = useFormErrors()
+// FormField clears its own message as the user edits.
+provide('clearFormField', clearField)
 let modalInstance = null
 
-const form = reactive({ name: '', description: '' })
+const form = reactive({ name: '' })
 const editing = ref(null)
 const formLoading = ref(false)
 
@@ -129,16 +157,18 @@ function goToAlbum(album) {
 }
 
 function openModal(album = null) {
+  clearErrors()
   editing.value = album
   if (album) {
-    Object.assign(form, { name: album.name, description: album.description ?? '' })
+    Object.assign(form, { name: album.name })
   } else {
-    Object.assign(form, { name: '', description: '' })
+    Object.assign(form, { name: '' })
   }
   modalInstance?.show()
 }
 
 async function handleSubmit() {
+  clearErrors()
   formLoading.value = true
   try {
     if (editing.value) {
@@ -150,17 +180,36 @@ async function handleSubmit() {
     }
     modalInstance?.hide()
     store.fetchAlbums()
-  } catch {
-    showToast('Error occurred', 'danger')
+  } catch (err) {
+    // 422 means per-field messages; anything else is a real failure.
+    if (!captureErrors(err)) showToast('Error occurred', 'danger')
   } finally {
     formLoading.value = false
   }
 }
 
+const showDeleteModal = ref(false)
+const albumToDelete = ref(null)
+const deleting = ref(false)
+
 async function deleteAlbum(album) {
-  if (!confirm(`Delete album "${album.name}"? All photos will be deleted.`)) return
-  await store.deleteAlbum(album.id)
-  showToast('Album deleted', 'success')
+  albumToDelete.value = album
+  showDeleteModal.value = true
+}
+
+async function handleConfirmDelete() {
+  if (!albumToDelete.value) return
+
+  deleting.value = true
+  try {
+    await store.deleteAlbum(target.value.id)
+    showToast('Album deleted', 'success')
+    showDeleteModal.value = false
+  } catch {
+    showToast('Failed to delete', 'danger')
+  } finally {
+    deleting.value = false
+  }
 }
 
 onMounted(() => {
@@ -168,3 +217,21 @@ onMounted(() => {
   modalInstance = new Modal(document.getElementById('albumModal'))
 })
 </script>
+
+<style scoped>
+.album-action {
+  line-height: 1;
+  text-decoration: none;
+  padding: 0.15rem 0.3rem !important;
+  border-radius: 6px;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.album-action:hover {
+  background: rgba(108, 92, 231, 0.1);
+}
+
+.album-action.text-danger:hover {
+  background: rgba(220, 53, 69, 0.1);
+}
+</style>
