@@ -87,16 +87,17 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { router } from '@inertiajs/vue3'
 import { useAlbumStore } from '@/stores/albums'
 import { useToast } from '@/composables/useToast'
 import ShimmerLoader from '@/components/ShimmerLoader.vue'
 
-const route = useRoute()
-const router = useRouter()
-
-// Supplied by the route (`/app/albums/:id`) rather than an Inertia page prop.
-const props = { albumId: route.params.id }
+const props = defineProps({
+  albumId: {
+    type: [Number, String],
+    required: true,
+  },
+})
 
 const store = useAlbumStore()
 const { showToast } = useToast()
@@ -115,7 +116,7 @@ function goBack() {
     return
   }
 
-  router.push({ name: 'albums' })
+  router.visit('/app/albums')
 }
 
 async function handleUpload(e) {
