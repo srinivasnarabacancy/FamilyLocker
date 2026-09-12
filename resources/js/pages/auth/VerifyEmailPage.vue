@@ -75,26 +75,18 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { useForm } from '@/composables/useForm'
-import { useAuthStore } from '@/stores/auth'
-import { useToast } from '@/composables/useToast'
+import { computed, reactive, ref } from 'vue'
+import { router, useForm, usePage } from '@inertiajs/vue3'
 
-const router = useRouter()
-const auth = useAuthStore()
-const { showToast } = useToast()
-
+const page = usePage()
 const otpDigits = reactive(Array(6).fill(''))
 const inputRefs = ref([])
 
 const otpForm = useForm({ otp: '' })
 const resendForm = useForm({})
 
-const userEmail = computed(() => auth.user?.email ?? 'your email address')
+const userEmail = computed(() => page.props.auth?.user?.email ?? 'your email address')
 const otp = computed(() => otpDigits.join(''))
-
-onMounted(() => inputRefs.value[0]?.focus())
 
 function onDigitInput(index, event) {
   const val = event.target.value.replace(/\D/g, '')
@@ -120,32 +112,26 @@ function onPaste(event) {
   inputRefs.value[Math.min(paste.length, 5)]?.focus()
 }
 
-async function handleVerify() {
-  const result = await otpForm.run(() => auth.verifyOtp(otp.value))
-  if (!result) {
-    // Clear the boxes so the next attempt starts from a clean slate.
-    otpDigits.fill('')
-    inputRefs.value[0]?.focus()
-    return
-  }
-
-  showToast('Email verified successfully. Welcome to FamilyLocker!', 'success')
-  router.push({ name: 'dashboard' })
+function handleVerify() {
+  otpForm.otp = otp.value
+  otpForm.post('/email/verify-otp', { preserveScroll: true })
 }
 
-async function handleResend() {
-  const result = await resendForm.run(() => auth.resendVerification())
-  if (!result) return
-
-  otpDigits.fill('')
-  otpForm.clearErrors()
-  inputRefs.value[0]?.focus()
-  showToast('A new 6-digit code has been sent to your email address.', 'success')
+function handleResend() {
+  resendForm
+    .transform(() => ({ _token: page.props.csrf_token }))
+    .post('/email/verification-notification', {
+      preserveScroll: true,
+      onSuccess: () => {
+        otpDigits.fill('')
+        otpForm.clearErrors()
+        inputRefs.value[0]?.focus()
+      },
+    })
 }
 
-async function handleLogout() {
-  await auth.logout()
-  router.push({ name: 'login' })
+function handleLogout() {
+  router.post('/logout', { _token: page.props.csrf_token })
 }
 </script>
 

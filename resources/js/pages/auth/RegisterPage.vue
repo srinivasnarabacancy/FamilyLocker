@@ -16,10 +16,6 @@
         <h3 class="fw-bold mb-1">Get started</h3>
         <p class="text-muted small mb-4">Create your account and set up your family.</p>
 
-        <div v-if="form.error" class="alert alert-danger py-2 small" role="alert">
-          <i class="bi bi-exclamation-circle me-1" />{{ form.error }}
-        </div>
-
         <form @submit.prevent="handleRegister">
         
           <div class="row g-2 mb-3">
@@ -117,9 +113,9 @@
 
         <p class="text-center text-muted small mb-0">
           Already have an account?
-          <RouterLink to="/login" class="text-primary fw-semibold">
+          <Link href="/login" class="text-primary fw-semibold">
             Sign in
-          </RouterLink>
+          </Link>
         </p>
       </div>
     </div>
@@ -127,13 +123,8 @@
 </template>
 
 <script setup>
-import { useRouter } from 'vue-router'
-import { useForm } from '@/composables/useForm'
-import { useAuthStore } from '@/stores/auth'
+import { Link, useForm, usePage } from '@inertiajs/vue3'
 import AuthLeftPanel from '@/components/AuthLeftPanel.vue'
-
-const router = useRouter()
-const auth = useAuthStore()
 
 const form = useForm({
   name: '',
@@ -142,12 +133,16 @@ const form = useForm({
   password: '',
   password_confirmation: '',
 })
+const page = usePage()
 
 async function handleRegister() {
-  const result = await form.run((data) => auth.register(data))
-  if (!result) return
-
-  // Registration always sends an OTP, so the next stop is the verify screen.
-  router.push({ name: 'verify-email' })
+  form
+    .transform((data) => ({
+      ...data,
+      _token: page.props.csrf_token,
+    }))
+    .post('/register', {
+      preserveScroll: true,
+    })
 }
 </script>

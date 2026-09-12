@@ -39,12 +39,12 @@
 </template>
 
 <script setup>
+import { usePage } from '@inertiajs/vue3'
+import { watch } from 'vue'
 import { useToast } from '@/composables/useToast'
 
-// Flash messages used to arrive as Inertia shared props from the Laravel
-// session. With a token-based SPA there is no server-rendered request, so
-// pages raise their own toasts via showToast().
-const { toasts, removeToast } = useToast()
+const page = usePage()
+const { toasts, showToast, removeToast } = useToast()
 
 function toastIcon(type) {
   return {
@@ -64,5 +64,11 @@ function toastTitle(type) {
   }[type] ?? 'Notice'
 }
 
+watch(() => page.props.flash?.success, (message) => {
+  if (message) showToast(message, 'success')
+}, { immediate: true })
 
+watch(() => page.props.flash?.error, (message) => {
+  if (message) showToast(message, 'danger')
+}, { immediate: true })
 </script>
