@@ -215,9 +215,86 @@ test('validator reproduces Laravel messages and rule semantics', async () => {
   // required_without satisfied by the sibling.
   assert.equal(await run({ phone: '123' }, { email: 'nullable|required_without:phone|email' }), null);
 
+  // Size rules are measured against the field's DECLARED type, as Laravel does
+  // in Validator::getSize() — not by sniffing whether the value looks numeric.
+  // A numeric-looking string under `string` is measured by length.
+  assert.equal(await run({ document_number: '635' }, { document_number: 'nullable|string|max:100' }), null);
+  assert.equal(await run({ phone: '919876543210' }, { phone: 'nullable|string|max:20' }), null);
+  assert.equal(await run({ title: '2024' }, { title: 'required|string|max:255' }), null);
+
+  // ...and a short all-digit password is still too short.
+  assert.deepEqual(await run({ password: '1234567' }, { password: 'required|string|min:8' }), {
+    password: ['The password field must be at least 8 characters.'],
+  });
+
+  // With a numeric rule present, the value itself is compared.
+  assert.deepEqual(
+    await run({ reminder_days_before: '400' }, { reminder_days_before: 'integer|min:1|max:365' }),
+    { reminder_days_before: ['The reminder days before field must not be greater than 365.'] },
+  );
+  assert.equal(
+    await run({ reminder_days_before: '30' }, { reminder_days_before: 'integer|min:1|max:365' }),
+    null,
+  );
+
+  // Files are sized in kilobytes.
+  const file = (kb) => ({ originalname: 'a.png', mimetype: 'image/png', size: kb * 1024, buffer: Buffer.alloc(0) });
+  assert.deepEqual(await run({ file: file(20000) }, { file: 'nullable|file|max:10240' }), {
+    file: ['The file field must not be greater than 10240 kilobytes.'],
+  });
+  assert.equal(await run({ file: file(500) }, { file: 'nullable|file|max:10240' }), null);
+
+  // Arrays are sized by item count.
+  assert.deepEqual(await run({ photos: [1, 2, 3] }, { photos: 'array|max:2' }), {
+    photos: ['The photos field must not have more than 2 items.'],
+  });
+
+  // `size` on a string is a character count, so a 6-digit OTP passes.
+  assert.equal(await run({ otp: '123456' }, { otp: 'required|string|size:6' }), null);
+  assert.deepEqual(await run({ otp: '12345' }, { otp: 'required|string|size:6' }), {
+    otp: ['The otp field must be 6 characters.'],
+  });
+
   // after_or_equal compares against another field.
   assert.deepEqual(
     await run({ start_date: '2026-05-01', end_date: '2026-04-01' }, { end_date: 'date|after_or_equal:start_date' }),
     { end_date: ['The end date field must be a date after or equal to start date.'] },
+  );
+});
+
+test('presence rules do not throw when the field actually has a value', async () => {
+  const { Validator } = require('../dist/common/validator');
+  const run = async (data, rules) => {
+    try {
+      await new Validator(data, rules).validate();
+      return null;
+    } catch (e) {
+      // A thrown Error (rather than a ValidationException) is the bug: the rule
+      // loop reached an unhandled case and aborted the request with a 500.
+      if (!e.getResponse) throw e;
+      return e.getResponse().errors;
+    }
+  };
+
+  // Creating a recurring bill: recurring_period is present, so required_if is
+  // satisfied and must simply be skipped.
+  assert.equal(
+    await run(
+      { is_recurring: 'true', recurring_period: 'monthly' },
+      { recurring_period: 'nullable|required_if:is_recurring,true|in:monthly,quarterly,yearly' },
+    ),
+    null,
+  );
+
+  // Inviting a family member with an email: required_without:phone is satisfied.
+  assert.equal(
+    await run({ email: 'a@b.com' }, { email: 'nullable|required_without:phone|email' }),
+    null,
+  );
+
+  // The conditional still fires when the value is genuinely absent.
+  assert.deepEqual(
+    await run({ is_recurring: 'true' }, { recurring_period: 'nullable|required_if:is_recurring,true' }),
+    { recurring_period: ['The recurring period field is required when is recurring is true.'] },
   );
 });

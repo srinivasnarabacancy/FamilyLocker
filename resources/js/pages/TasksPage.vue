@@ -14,22 +14,20 @@
     <div class="fl-card p-3 mb-4">
       <div class="row g-2">
         <div class="col-6 col-md-3">
-          <select v-model="filters.status" class="form-select" @change="fetchTasks">
-            <option value="">All Status</option>
-            <option value="pending">Pending</option>
-            <option value="in_progress">In Progress</option>
-            <option value="completed">Completed</option>
-            <option value="cancelled">Cancelled</option>
-          </select>
+          <SelectField
+            v-model="filters.status"
+            @change="fetchTasks"
+            :options="[{ value: 'pending', label: 'Pending' }, { value: 'in_progress', label: 'In Progress' }, { value: 'completed', label: 'Completed' }, { value: 'cancelled', label: 'Cancelled' }]"
+            placeholder="All Status"
+          />
         </div>
         <div class="col-6 col-md-3">
-          <select v-model="filters.priority" class="form-select" @change="fetchTasks">
-            <option value="">All Priority</option>
-            <option value="urgent">Urgent</option>
-            <option value="high">High</option>
-            <option value="medium">Medium</option>
-            <option value="low">Low</option>
-          </select>
+          <SelectField
+            v-model="filters.priority"
+            @change="fetchTasks"
+            :options="[{ value: 'urgent', label: 'Urgent' }, { value: 'high', label: 'High' }, { value: 'medium', label: 'Medium' }, { value: 'low', label: 'Low' }]"
+            placeholder="All Priority"
+          />
         </div>
         <div class="col-6 col-md-2">
           <div class="form-check form-switch d-flex align-items-center h-100">
@@ -90,17 +88,12 @@
                   </span>
                 </td>
                 <td>
-                  <select
-                    :value="task.status"
-                    class="form-select form-select-sm"
-                    style="width:130px"
-                    @change="updateStatus(task, $event.target.value)"
-                  >
-                    <option value="pending">Pending</option>
-                    <option value="in_progress">In Progress</option>
-                    <option value="completed">Completed</option>
-                    <option value="cancelled">Cancelled</option>
-                  </select>
+                  <SelectField
+                    :model-value="task.status"
+                    :options="taskStatuses"
+                    style="width:150px"
+                    @change="(value) => updateStatus(task, value)"
+                  />
                 </td>
                 <td class="text-center">
                   <button class="btn btn-icon btn-light btn-sm me-1" @click="openModal(task)"><i class="bi bi-pencil" /></button>
@@ -173,40 +166,47 @@
             <button type="button" class="btn-close" data-bs-dismiss="modal" />
           </div>
           <div class="modal-body">
-            <form id="taskForm" @submit.prevent="handleSubmit">
+            <form id="taskForm" novalidate @submit.prevent="handleSubmit">
               <div class="row g-3">
-                <div class="col-12">
-                  <label class="form-label">Task Title *</label>
-                  <input v-model="form.title" type="text" class="form-control" required />
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label">Priority</label>
-                  <select v-model="form.priority" class="form-select">
-                    <option value="low">Low</option>
-                    <option value="medium">Medium</option>
-                    <option value="high">High</option>
-                    <option value="urgent">Urgent</option>
-                  </select>
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label">Due Date</label>
-                  <input v-model="form.due_date" type="date" class="form-control" />
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label">Assign To</label>
-                  <select v-model="form.assigned_to" class="form-select">
-                    <option value="">Unassigned</option>
-                    <option v-for="m in familyMembers" :key="m.id" :value="m.id">{{ m.name }}</option>
-                  </select>
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label">Category</label>
-                  <input v-model="form.category" type="text" class="form-control" placeholder="e.g. Shopping, Maintenance" />
-                </div>
-                <div class="col-12">
-                  <label class="form-label">Description</label>
-                  <textarea v-model="form.description" rows="2" class="form-control" />
-                </div>
+                <FormField label="Task Title" required :error="errors.title" field="title" class="col-12">
+                  <template #default="{ id }">
+                    <input :id="id" v-model="form.title" type="text" class="form-control" />
+                  </template>
+                </FormField>
+                <FormField label="Priority" :error="errors.priority" field="priority" class="col-md-6">
+                  <template #default="{ id }">
+                    <SelectField
+                      :id="id"
+                      v-model="form.priority"
+                      :options="[{ value: 'low', label: 'Low' }, { value: 'medium', label: 'Medium' }, { value: 'high', label: 'High' }, { value: 'urgent', label: 'Urgent' }]"
+                    />
+                  </template>
+                </FormField>
+                <FormField label="Due Date" :error="errors.due_date" field="due_date" class="col-md-6">
+                  <template #default="{ id }">
+                    <input :id="id" v-model="form.due_date" type="date" class="form-control" />
+                  </template>
+                </FormField>
+                <FormField label="Assign To" :error="errors.assigned_to" field="assigned_to" class="col-md-6">
+                  <template #default="{ id }">
+                    <SelectField
+                      :id="id"
+                      v-model="form.assigned_to"
+                      :options="familyMembers" value-key="id" label-key="name"
+                      placeholder="Unassigned"
+                    />
+                  </template>
+                </FormField>
+                <FormField label="Category" :error="errors.category" field="category" class="col-md-6">
+                  <template #default="{ id }">
+                    <input :id="id" v-model="form.category" type="text" class="form-control" placeholder="e.g. Shopping, Maintenance" />
+                  </template>
+                </FormField>
+                <FormField label="Description" :error="errors.description" field="description" class="col-12">
+                  <template #default="{ id }">
+                    <textarea :id="id" v-model="form.description" rows="2" class="form-control" />
+                  </template>
+                </FormField>
               </div>
             </form>
           </div>
@@ -220,18 +220,45 @@
       </div>
     </div>
   </div>
+
+    <!-- Shared confirmation modal — see components/ConfirmModal.vue -->
+    <ConfirmModal
+      v-model="showDeleteModal"
+      :title="`Delete ${taskToDelete?.title}?`"
+      message="This task will be permanently deleted and cannot be recovered."
+      confirm-text="Delete"
+      cancel-text="Cancel"
+      icon="bi bi-trash"
+      variant="danger"
+      :loading="deleting"
+      @confirm="handleConfirmDelete"
+    />
 </template>
 
 <script setup>
-import { reactive, ref, onMounted } from 'vue'
+import { reactive, ref, onMounted, provide} from 'vue'
 import { Modal } from 'bootstrap'
 import { useTaskStore } from '@/stores/tasks'
 import { useToast } from '@/composables/useToast'
 import ShimmerLoader from '@/components/ShimmerLoader.vue'
+import ConfirmModal from '@/components/ConfirmModal.vue'
 import api from '@/services/api'
+import FormField from '@/components/FormField.vue'
+import SelectField from '@/components/SelectField.vue'
+import { useFormErrors } from '@/composables/useFormErrors'
 
 const store = useTaskStore()
 const { showToast } = useToast()
+const taskStatuses = [
+  { value: 'pending', label: 'Pending' },
+  { value: 'in_progress', label: 'In Progress' },
+  { value: 'completed', label: 'Completed' },
+  { value: 'cancelled', label: 'Cancelled' },
+]
+
+const { errors, clear: clearErrors, capture: captureErrors, clearField } = useFormErrors()
+// FormField clears its own message as the user edits.
+provide('clearFormField', clearField)
 let modalInstance = null
 
 const filters = reactive({ status: '', priority: '', my_tasks: false })
@@ -266,6 +293,7 @@ async function fetchTasks() {
 }
 
 function openModal(task = null) {
+  clearErrors()
   editing.value = task
   if (task) {
     Object.assign(form, { title: task.title, priority: task.priority, due_date: task.due_date?.substring(0, 10) ?? '', assigned_to: task.assigned_to ?? '', category: task.category ?? '', description: task.description ?? '' })
@@ -276,6 +304,7 @@ function openModal(task = null) {
 }
 
 async function handleSubmit() {
+  clearErrors()
   formLoading.value = true
   const payload = { ...form }
   if (!payload.assigned_to) delete payload.assigned_to
@@ -290,7 +319,8 @@ async function handleSubmit() {
     modalInstance?.hide()
     fetchTasks()
   } catch (err) {
-    showToast(err.response?.data?.message ?? 'Error', 'danger')
+    // 422 means per-field messages; anything else is a real failure.
+    if (!captureErrors(err)) showToast(err.response?.data?.message ?? 'Error', 'danger')
   } finally {
     formLoading.value = false
   }
@@ -306,10 +336,28 @@ async function toggleComplete(task) {
   await store.updateStatus(task.id, newStatus)
 }
 
+const showDeleteModal = ref(false)
+const taskToDelete = ref(null)
+const deleting = ref(false)
+
 async function deleteTask(task) {
-  if (!confirm(`Delete task "${task.title}"?`)) return
-  await store.deleteTask(task.id)
-  showToast('Task deleted', 'success')
+  taskToDelete.value = task
+  showDeleteModal.value = true
+}
+
+async function handleConfirmDelete() {
+  if (!taskToDelete.value) return
+
+  deleting.value = true
+  try {
+    await store.deleteTask(target.value.id)
+    showToast('Task deleted', 'success')
+    showDeleteModal.value = false
+  } catch {
+    showToast('Failed to delete', 'danger')
+  } finally {
+    deleting.value = false
+  }
 }
 
 onMounted(async () => {

@@ -128,7 +128,10 @@
       </main>
     </div>
 
-    <ToastContainer />
+    <!-- Toasts are rendered by App.vue (bottom-right). ToastContainer is the
+         top-centre variant — disabled for now so notifications do not appear
+         twice. Re-enable here and remove App.vue's inline container to switch. -->
+    <!-- <ToastContainer /> -->
 
     <!-- Logout Confirmation Modal -->
     <ConfirmModal
@@ -148,7 +151,7 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import ToastContainer from '@/components/ToastContainer.vue'
+// import ToastContainer from '@/components/ToastContainer.vue'
 import ConfirmModal from '@/components/ConfirmModal.vue'
 import { formatRoleLabel } from '@/constants/roles'
 import { useAuthStore } from '@/stores/auth'

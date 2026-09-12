@@ -137,32 +137,38 @@
       :subtitle="editingMed ? 'Update the medicine details.' : 'Track a medicine for a family member.'"
       icon="bi bi-capsule"
     >
-      <form id="medForm" @submit.prevent="handleMedSubmit">
+      <form id="medForm" novalidate @submit.prevent="handleMedSubmit">
         <div class="row g-3">
-          <div class="col-md-6">
-            <label class="form-label">Member Name *</label>
-            <input v-model="medForm.member_name" type="text" class="form-control" required />
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">Medicine Name *</label>
-            <input v-model="medForm.name" type="text" class="form-control" required />
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">Dosage</label>
-            <input v-model="medForm.dosage" type="text" class="form-control" placeholder="e.g. 500mg" />
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">Frequency</label>
-            <input v-model="medForm.frequency" type="text" class="form-control" placeholder="e.g. Twice daily" />
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">Start Date</label>
-            <input v-model="medForm.start_date" type="date" class="form-control" />
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">End Date</label>
-            <input v-model="medForm.end_date" type="date" class="form-control" />
-          </div>
+          <FormField label="Member Name" required :error="errors.member_name" field="member_name" class="col-md-6">
+            <template #default="{ id }">
+              <input :id="id" v-model="medForm.member_name" type="text" class="form-control" />
+            </template>
+          </FormField>
+          <FormField label="Medicine Name" required :error="errors.name" field="name" class="col-md-6">
+            <template #default="{ id }">
+              <input :id="id" v-model="medForm.name" type="text" class="form-control" />
+            </template>
+          </FormField>
+          <FormField label="Dosage" :error="errors.dosage" field="dosage" class="col-md-6">
+            <template #default="{ id }">
+              <input :id="id" v-model="medForm.dosage" type="text" class="form-control" placeholder="e.g. 500mg" />
+            </template>
+          </FormField>
+          <FormField label="Frequency" :error="errors.frequency" field="frequency" class="col-md-6">
+            <template #default="{ id }">
+              <input :id="id" v-model="medForm.frequency" type="text" class="form-control" placeholder="e.g. Twice daily" />
+            </template>
+          </FormField>
+          <FormField label="Start Date" :error="errors.start_date" field="start_date" class="col-md-6">
+            <template #default="{ id }">
+              <input :id="id" v-model="medForm.start_date" type="date" class="form-control" />
+            </template>
+          </FormField>
+          <FormField label="End Date" :error="errors.end_date" field="end_date" class="col-md-6">
+            <template #default="{ id }">
+              <input :id="id" v-model="medForm.end_date" type="date" class="form-control" />
+            </template>
+          </FormField>
 
           <!-- Medicine Image -->
           <div class="col-12">
@@ -208,44 +214,52 @@
       :subtitle="editingAppt ? 'Update the appointment details.' : 'Schedule a doctor visit for a family member.'"
       icon="bi bi-calendar-heart"
     >
-      <form id="apptForm" @submit.prevent="handleApptSubmit">
+      <form id="apptForm" novalidate @submit.prevent="handleApptSubmit">
         <div class="row g-3">
-          <div class="col-md-6">
-            <label class="form-label">Member Name *</label>
-            <input v-model="apptForm.member_name" type="text" class="form-control" required />
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">Doctor Name *</label>
-            <input v-model="apptForm.doctor_name" type="text" class="form-control" required />
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">Specialty</label>
-            <input v-model="apptForm.specialty" type="text" class="form-control" placeholder="e.g. Cardiologist" />
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">Date *</label>
-            <input v-model="apptForm.date" type="date" class="form-control" required />
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">Time</label>
-            <input v-model="apptForm.time" type="time" class="form-control" />
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">Status</label>
-            <select v-model="apptForm.status" class="form-select">
-              <option value="scheduled">Scheduled</option>
-              <option value="completed">Completed</option>
-              <option value="cancelled">Cancelled</option>
-            </select>
-          </div>
-          <div class="col-12">
-            <label class="form-label">Location / Hospital</label>
-            <input v-model="apptForm.location" type="text" class="form-control" />
-          </div>
-          <div class="col-12">
-            <label class="form-label">Notes</label>
-            <textarea v-model="apptForm.notes" rows="3" class="form-control" />
-          </div>
+          <FormField label="Member Name" required :error="errors.member_name" field="member_name" class="col-md-6">
+            <template #default="{ id }">
+              <input :id="id" v-model="apptForm.member_name" type="text" class="form-control" />
+            </template>
+          </FormField>
+          <FormField label="Doctor Name" required :error="errors.doctor_name" field="doctor_name" class="col-md-6">
+            <template #default="{ id }">
+              <input :id="id" v-model="apptForm.doctor_name" type="text" class="form-control" />
+            </template>
+          </FormField>
+          <FormField label="Specialty" :error="errors.specialty" field="specialty" class="col-md-6">
+            <template #default="{ id }">
+              <input :id="id" v-model="apptForm.specialty" type="text" class="form-control" placeholder="e.g. Cardiologist" />
+            </template>
+          </FormField>
+          <FormField label="Date" required :error="errors.date" field="date" class="col-md-6">
+            <template #default="{ id }">
+              <input :id="id" v-model="apptForm.date" type="date" class="form-control" />
+            </template>
+          </FormField>
+          <FormField label="Time" :error="errors.time" field="time" class="col-md-6">
+            <template #default="{ id }">
+              <input :id="id" v-model="apptForm.time" type="time" class="form-control" />
+            </template>
+          </FormField>
+          <FormField label="Status" :error="errors.status" field="status" class="col-md-6">
+            <template #default="{ id }">
+              <SelectField
+                :id="id"
+                v-model="apptForm.status"
+                :options="[{ value: 'scheduled', label: 'Scheduled' }, { value: 'completed', label: 'Completed' }, { value: 'cancelled', label: 'Cancelled' }]"
+              />
+            </template>
+          </FormField>
+          <FormField label="Location / Hospital" :error="errors.location" field="location" class="col-12">
+            <template #default="{ id }">
+              <input :id="id" v-model="apptForm.location" type="text" class="form-control" />
+            </template>
+          </FormField>
+          <FormField label="Notes" :error="errors.notes" field="notes" class="col-12">
+            <template #default="{ id }">
+              <textarea :id="id" v-model="apptForm.notes" rows="3" class="form-control" />
+            </template>
+          </FormField>
           <div class="col-12">
             <label class="form-label">
               Remind Days Before
@@ -263,16 +277,38 @@
       </template>
     </AppOffcanvas>
   </div>
+
+    <!-- Shared confirmation modal — see components/ConfirmModal.vue.
+         One modal serves both medicines and appointments; the pending
+         descriptor carries the copy and the action to run. -->
+    <ConfirmModal
+      v-model="showDeleteModal"
+      :title="pendingDelete?.title ?? 'Are you sure?'"
+      :message="pendingDelete?.message ?? 'This action cannot be undone.'"
+      confirm-text="Delete"
+      cancel-text="Cancel"
+      icon="bi bi-trash"
+      variant="danger"
+      :loading="deleting"
+      @confirm="handleConfirmDelete"
+    />
 </template>
 
 <script setup>
-import { reactive, ref, onMounted } from 'vue'
+import { reactive, ref, onMounted, provide} from 'vue'
 import { useMedicalStore } from '@/stores/medical'
 import { useToast } from '@/composables/useToast'
 import AppOffcanvas from '@/components/AppOffcanvas.vue'
+import ConfirmModal from '@/components/ConfirmModal.vue'
+import FormField from '@/components/FormField.vue'
+import SelectField from '@/components/SelectField.vue'
+import { useFormErrors } from '@/composables/useFormErrors'
 
 const store = useMedicalStore()
 const { showToast } = useToast()
+const { errors, clear: clearErrors, capture: captureErrors, clearField } = useFormErrors()
+// FormField clears its own message as the user edits.
+provide('clearFormField', clearField)
 
 const tab = ref('medicines')
 const formLoading = ref(false)
@@ -305,6 +341,7 @@ function onMedImageChange(e) {
 }
 
 function openMedModal(med = null) {
+  clearErrors()
   editingMed.value = med
   if (med) {
     Object.assign(medForm, { member_name: med.member_name, name: med.name, dosage: med.dosage ?? '', frequency: med.frequency ?? '', start_date: med.start_date?.substring(0, 10) ?? '', end_date: med.end_date?.substring(0, 10) ?? '', is_active: med.is_active, notify_on_completion: med.notify_on_completion ?? false })
@@ -333,22 +370,48 @@ async function handleMedSubmit() {
     }
     showMedOffcanvas.value = false
     store.fetchMedicines()
-  } catch {
-    showToast('Error occurred', 'danger')
+  } catch (err) {
+    // 422 means per-field messages; anything else is a real failure.
+    if (!captureErrors(err)) showToast('Error occurred', 'danger')
   } finally {
     formLoading.value = false
   }
 }
 
-async function deleteMedicine(med) {
-  if (!confirm(`Delete medicine "${med.name}"?`)) return
-  await store.deleteMedicine(med.id)
-  showToast('Medicine deleted', 'success')
-  store.fetchMedicines()
+const showDeleteModal = ref(false)
+const deleting = ref(false)
+const pendingDelete = ref(null)
+
+async function handleConfirmDelete() {
+  if (!pendingDelete.value) return
+
+  deleting.value = true
+  try {
+    await pendingDelete.value.run()
+    showDeleteModal.value = false
+  } catch {
+    showToast('Failed to delete', 'danger')
+  } finally {
+    deleting.value = false
+  }
+}
+
+function deleteMedicine(med) {
+  pendingDelete.value = {
+    title: `Delete ${med.name}?`,
+    message: 'This medicine will be permanently deleted and cannot be recovered.',
+    run: async () => {
+      await store.deleteMedicine(med.id)
+      showToast('Medicine deleted', 'success')
+      store.fetchMedicines()
+    },
+  }
+  showDeleteModal.value = true
 }
 
 // Appointments
 function openApptModal(appt = null) {
+  clearErrors()
   editingAppt.value = appt
   if (appt) {
     Object.assign(apptForm, { member_name: appt.member_name, doctor_name: appt.doctor_name, specialty: appt.specialty ?? '', date: appt.date?.substring(0, 10) ?? '', time: appt.time ? appt.time.substring(0, 5) : '', location: appt.location ?? '', notes: appt.notes ?? '', status: appt.status, remind_days_before: appt.remind_days_before ?? 1 })
@@ -370,18 +433,25 @@ async function handleApptSubmit() {
     }
     showApptOffcanvas.value = false
     store.fetchAppointments()
-  } catch {
-    showToast('Error occurred', 'danger')
+  } catch (err) {
+    // 422 means per-field messages; anything else is a real failure.
+    if (!captureErrors(err)) showToast('Error occurred', 'danger')
   } finally {
     formLoading.value = false
   }
 }
 
-async function deleteAppt(appt) {
-  if (!confirm(`Delete appointment with Dr. ${appt.doctor_name}?`)) return
-  await store.deleteAppointment(appt.id)
-  showToast('Appointment deleted', 'success')
-  store.fetchAppointments()
+function deleteAppt(appt) {
+  pendingDelete.value = {
+    title: `Delete appointment with Dr. ${appt.doctor_name}?`,
+    message: 'This appointment will be permanently deleted and cannot be recovered.',
+    run: async () => {
+      await store.deleteAppointment(appt.id)
+      showToast('Appointment deleted', 'success')
+      store.fetchAppointments()
+    },
+  }
+  showDeleteModal.value = true
 }
 
 onMounted(() => {

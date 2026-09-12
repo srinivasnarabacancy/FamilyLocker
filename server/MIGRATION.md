@@ -162,12 +162,22 @@ server-side `VerifiedGuard`.
       serialization and validation. It does not yet diff full responses for all
       71 endpoints against the running PHP app. That is the check that would make
       the cutover provable rather than argued; budget about a week.
-- [ ] **File storage.** `STORAGE_DRIVER=supabase` must be enabled in production.
-      Laravel writes uploads to the local disk, and Vercel's filesystem is
+- [ ] **File storage.** `STORAGE_DRIVER=supabase` must be enabled in production,
+      along with `SUPABASE_URL` and `SUPABASE_SERVICE_KEY`. Until it is, every
+      upload 500s: the driver falls back to `local`, which writes to
+      `../storage/app/public` — outside the only writable path on Vercel. The
+      service now fails with a message naming the missing variable rather than a
+      bare "Server Error".
+
+      Laravel wrote uploads to the local disk, and Vercel's filesystem is
       ephemeral (`api/index.php` redirects storage into `/tmp`), so uploads there
-      almost certainly do not survive between invocations today. Existing rows
-      hold paths like `documents/xyz.pdf`; the Supabase driver keeps that layout,
-      but **files already on disk need a one-off copy into the bucket**.
+      did not survive between invocations. Existing rows hold paths like
+      `documents/xyz.pdf`; the Supabase driver keeps that layout, but **files
+      already on disk need a one-off copy into the bucket**.
+
+      Reads go through `StorageController` at `/storage/<path>` — the URL the SPA
+      builds and the one `vercel.json` rewrites into the function. It streams
+      from the bucket with the service key, so the bucket can stay private.
 - [ ] **Rate limiting is per-process.** `ThrottleGuard` counts in memory, so on
       more than one instance each enforces its own budget. Laravel used the
       shared `cache` table. Move to Redis or the DB before scaling out.

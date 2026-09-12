@@ -20,86 +20,83 @@
           <i class="bi bi-exclamation-circle me-1" />{{ form.error }}
         </div>
 
-        <form @submit.prevent="handleRegister">
+        <form novalidate @submit.prevent="handleRegister">
         
           <div class="row g-2 mb-3">
-            <div class="col-6">
-              <label class="form-label fw-semibold">Your Name</label>
-              <div class="input-icon-wrap">
-                <i class="bi bi-person input-icon"></i>
-                <input
-                  v-model="form.name"
-                  type="text"
-                  class="form-control form-control-lg ps-5"
-                  :class="{ 'is-invalid': form.errors.name }"
-                  placeholder="John Doe"
-                  required
-                />
-              </div>
-              <div v-if="form.errors.name" class="invalid-feedback d-block">{{ form.errors.name }}</div>
-            </div>
-            <div class="col-6">
-              <label class="form-label fw-semibold">Family Name</label>
-              <div class="input-icon-wrap">
-                <i class="bi bi-house input-icon"></i>
-                <input
-                  v-model="form.family_name"
-                  type="text"
-                  class="form-control form-control-lg ps-5"
-                  :class="{ 'is-invalid': form.errors.family_name }"
-                  placeholder="The Smith Family"
-                  required
-                />
-              </div>
-              <div v-if="form.errors.family_name" class="invalid-feedback d-block">{{ form.errors.family_name }}</div>
-            </div>
+            <FormField label="Your Name" required :error="form.errors.name" field="name" class="col-6">
+              <template #default="{ id }">
+                <div class="input-icon-wrap">
+                  <i class="bi bi-person input-icon"></i>
+                  <input :id="id"
+                    v-model="form.name"
+                    type="text"
+                    class="form-control form-control-lg ps-5"
+                    placeholder="John Doe"
+                    required
+                  />
+                </div>
+              </template>
+            </FormField>
+            <FormField label="Family Name" required :error="form.errors.family_name" field="family_name" class="col-6">
+              <template #default="{ id }">
+                <div class="input-icon-wrap">
+                  <i class="bi bi-house input-icon"></i>
+                  <input :id="id"
+                    v-model="form.family_name"
+                    type="text"
+                    class="form-control form-control-lg ps-5"
+                    placeholder="The Smith Family"
+                    required
+                  />
+                </div>
+              </template>
+            </FormField>
           </div>
 
-          <div class="mb-3">
-            <label class="form-label fw-semibold">Email Address</label>
-            <div class="input-icon-wrap">
-              <i class="bi bi-envelope input-icon"></i>
-              <input
-                v-model="form.email"
-                type="email"
-                class="form-control form-control-lg ps-5"
-                :class="{ 'is-invalid': form.errors.email }"
-                placeholder="you@example.com"
-                required
-              />
-            </div>
-            <div v-if="form.errors.email" class="invalid-feedback d-block">{{ form.errors.email }}</div>
-          </div>
+          <FormField label="Email Address" required :error="form.errors.email" field="email" class="mb-3">
+            <template #default="{ id }">
+              <div class="input-icon-wrap">
+                <i class="bi bi-envelope input-icon"></i>
+                <input :id="id"
+                  v-model="form.email"
+                  type="email"
+                  class="form-control form-control-lg ps-5"
+                  placeholder="you@example.com"
+                  required
+                />
+              </div>
+            </template>
+          </FormField>
 
           <div class="row g-2 mb-4">
-            <div class="col-6">
-              <label class="form-label fw-semibold">Password</label>
-              <div class="input-icon-wrap">
-                <i class="bi bi-lock input-icon"></i>
-                <input
-                  v-model="form.password"
-                  type="password"
-                  class="form-control form-control-lg ps-5"
-                  :class="{ 'is-invalid': form.errors.password }"
-                  placeholder="Min. 8 chars"
-                  required
-                />
-              </div>
-              <div v-if="form.errors.password" class="invalid-feedback d-block">{{ form.errors.password }}</div>
-            </div>
-            <div class="col-6">
-              <label class="form-label fw-semibold">Confirm Password</label>
-              <div class="input-icon-wrap">
-                <i class="bi bi-lock-fill input-icon"></i>
-                <input
-                  v-model="form.password_confirmation"
-                  type="password"
-                  class="form-control form-control-lg ps-5"
-                  placeholder="Repeat password"
-                  required
-                />
-              </div>
-            </div>
+            <FormField label="Password" required :error="form.errors.password" field="password" class="col-6">
+              <template #default="{ id }">
+                <div class="input-icon-wrap">
+                  <i class="bi bi-lock input-icon"></i>
+                  <input :id="id"
+                    v-model="form.password"
+                    type="password"
+                    class="form-control form-control-lg ps-5"
+                    placeholder="Min. 8 chars"
+                    required
+                  />
+                </div>
+              </template>
+            </FormField>
+            <FormField label="Confirm Password" required :error="form.errors.password_confirmation" field="password_confirmation" class="col-6">
+              <template #default="{ id }">
+                <div class="input-icon-wrap">
+                  <i class="bi bi-lock-fill input-icon"></i>
+                  <input :id="id"
+                    v-model="form.password_confirmation"
+                    type="password"
+                    class="form-control form-control-lg ps-5"
+                    placeholder="Repeat password"
+                    required
+                  />
+                </div>
+              </template>
+            </FormField>
           </div>
 
           <button
@@ -127,11 +124,13 @@
 </template>
 
 <script setup>
+import { provide } from 'vue'
 import { useRouter } from 'vue-router'
 import { useForm } from '@/composables/useForm'
 import { useAuthStore } from '@/stores/auth'
 import { useToast } from '@/composables/useToast'
 import AuthLeftPanel from '@/components/AuthLeftPanel.vue'
+import FormField from '@/components/FormField.vue'
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -144,6 +143,9 @@ const form = useForm({
   password: '',
   password_confirmation: '',
 })
+
+// FormField clears its own message as the user edits.
+provide('clearFormField', (field) => form.clearField(field))
 
 async function handleRegister() {
   const result = await form.run((data) => auth.register(data))

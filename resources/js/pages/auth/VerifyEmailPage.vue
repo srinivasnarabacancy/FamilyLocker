@@ -19,7 +19,7 @@
       <i class="bi bi-exclamation-circle me-1" />{{ generalError }}
     </div>
 
-    <form @submit.prevent="handleVerify">
+    <form novalidate @submit.prevent="handleVerify">
       <!-- 6-box OTP input -->
       <div class="otp-inputs mb-3">
         <input
@@ -32,7 +32,6 @@
           autocomplete="one-time-code"
           maxlength="1"
           class="otp-input"
-          :class="{ 'is-invalid': otpForm.errors.otp && i === 0 }"
           :disabled="isExpired || otpForm.processing"
           @input="onDigitInput(i, $event)"
           @keydown="onKeyDown(i, $event)"
@@ -368,9 +367,6 @@ async function handleLogout() {
   box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.15);
 }
 
-.otp-input.is-invalid {
-  border-color: #dc3545;
-}
 
 .otp-input:disabled {
   background: #f1f3f5;

@@ -1,4 +1,4 @@
-import { INestApplication } from '@nestjs/common';
+import { INestApplication, RequestMethod } from '@nestjs/common';
 import { json, urlencoded } from 'express';
 import { AllExceptionsFilter } from './common/all-exceptions.filter';
 
@@ -14,8 +14,12 @@ export function configureApp(app: INestApplication): void {
   app.use(json({ limit: '25mb' }));
   app.use(urlencoded({ extended: true, limit: '25mb' }));
 
-  // Matches Laravel's `api` route group prefix.
-  app.setGlobalPrefix('api');
+  // Matches Laravel's `api` route group prefix. Uploads are the one exception:
+  // the SPA and every existing database path expect them at `/storage/...`,
+  // not `/api/storage/...`.
+  app.setGlobalPrefix('api', {
+    exclude: [{ path: 'storage/*', method: RequestMethod.GET }],
+  });
 
   app.useGlobalFilters(new AllExceptionsFilter());
 

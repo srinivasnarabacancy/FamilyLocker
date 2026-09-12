@@ -5,6 +5,7 @@ import { memoryStorage } from 'multer';
 
 import { PrismaService } from './common/prisma.service';
 import { StorageService } from './common/storage.service';
+import { StorageController } from './common/storage.controller';
 import { ActivityLogService } from './common/activity-log.service';
 import { ThrottleGuard } from './common/throttle.guard';
 import { MailService } from './mail/mail.service';
@@ -41,6 +42,7 @@ import { SendRemindersService } from './modules/cron/send-reminders.service';
     }),
   ],
   controllers: [
+    StorageController,
     AuthController,
     DashboardController,
     FamilyController,

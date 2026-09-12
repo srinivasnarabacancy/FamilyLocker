@@ -83,37 +83,44 @@
       subtitle="Either email or mobile is required."
       icon="bi bi-person-plus"
     >
-      <form id="inviteForm" @submit.prevent="handleInvite">
-        <div class="mb-3">
-          <label class="form-label fw-semibold">Full Name <span class="text-danger">*</span></label>
-          <input v-model="inviteForm.name" type="text" class="form-control" placeholder="John Doe" required />
-        </div>
+      <form id="inviteForm" novalidate @submit.prevent="handleInvite">
+        <FormField label="Full Name" required :error="errors.name" field="name" class="mb-3">
+          <template #default="{ id }">
+            <input :id="id" v-model="inviteForm.name" type="text" class="form-control" placeholder="John Doe" />
+          </template>
+        </FormField>
         <div class="row g-3">
-          <div class="col-12 col-md-6">
-            <label class="form-label fw-semibold">Email</label>
-            <input v-model="inviteForm.email" type="email" class="form-control" placeholder="name@example.com" />
-          </div>
-          <div class="col-12 col-md-6">
-            <label class="form-label fw-semibold">Mobile Number</label>
-            <input v-model="inviteForm.phone" type="tel" class="form-control" placeholder="+91 XXXXX XXXXX" />
-          </div>
+          <FormField label="Email" :error="errors.email" field="email" class="col-12 col-md-6">
+            <template #default="{ id }">
+              <input :id="id" v-model="inviteForm.email" type="email" class="form-control" placeholder="name@example.com" />
+            </template>
+          </FormField>
+          <FormField label="Mobile Number" :error="errors.phone" field="phone" class="col-12 col-md-6">
+            <template #default="{ id }">
+              <input :id="id" v-model="inviteForm.phone" type="tel" class="form-control" placeholder="+91 XXXXX XXXXX" />
+            </template>
+          </FormField>
         </div>
         <div class="row g-3 mt-1">
-          <div class="col-12 col-md-6">
-            <label class="form-label fw-semibold">Role</label>
-            <select v-model="inviteForm.role" class="form-select">
-              <option v-for="role in inviteRoleOptions" :key="role.value" :value="role.value">
-                {{ role.label }}
-              </option>
-            </select>
-          </div>
-          <div class="col-12 col-md-6">
-            <label class="form-label fw-semibold">Relation</label>
-            <select v-model="inviteForm.relation" class="form-select">
-              <option value="">Select relation</option>
-              <option v-for="r in relations" :key="r" :value="r">{{ r }}</option>
-            </select>
-          </div>
+          <FormField label="Role" :error="errors.role" field="role" class="col-12 col-md-6">
+            <template #default="{ id }">
+              <SelectField
+                :id="id"
+                v-model="inviteForm.role"
+                :options="inviteRoleOptions"
+              />
+            </template>
+          </FormField>
+          <FormField required label="Relation" :error="errors.relation" field="relation" class="col-12 col-md-6">
+            <template #default="{ id }">
+              <SelectField
+                :id="id"
+                v-model="inviteForm.relation"
+                :options="relations"
+                placeholder="Select relation"
+              />
+            </template>
+          </FormField>
         </div>
       </form>
 
@@ -132,11 +139,12 @@
       subtitle="Update member details."
       icon="bi bi-person-gear"
     >
-      <form id="editMemberForm" @submit.prevent="handleEditMember">
-        <div class="mb-3">
-          <label class="form-label fw-semibold">Full Name <span class="text-danger">*</span></label>
-          <input v-model="editForm.name" type="text" class="form-control" placeholder="John Doe" required />
-        </div>
+      <form id="editMemberForm" novalidate @submit.prevent="handleEditMember">
+        <FormField label="Full Name" required :error="errors.name" field="name" class="mb-3">
+          <template #default="{ id }">
+            <input :id="id" v-model="editForm.name" type="text" class="form-control" placeholder="John Doe" />
+          </template>
+        </FormField>
         <div class="row g-3">
           <div class="col-12 col-md-6">
             <label class="form-label fw-semibold">
@@ -169,21 +177,25 @@
           </div>
         </div>
         <div class="row g-3 mt-1">
-          <div class="col-12 col-md-6">
-            <label class="form-label fw-semibold">Role</label>
-            <select v-model="editForm.role" class="form-select">
-              <option v-for="role in inviteRoleOptions" :key="role.value" :value="role.value">
-                {{ role.label }}
-              </option>
-            </select>
-          </div>
-          <div class="col-12 col-md-6">
-            <label class="form-label fw-semibold">Relation</label>
-            <select v-model="editForm.relation" class="form-select">
-              <option value="">Select relation</option>
-              <option v-for="r in relations" :key="r" :value="r">{{ r }}</option>
-            </select>
-          </div>
+          <FormField label="Role" :error="errors.role" field="role" class="col-12 col-md-6">
+            <template #default="{ id }">
+              <SelectField
+                :id="id"
+                v-model="editForm.role"
+                :options="inviteRoleOptions"
+              />
+            </template>
+          </FormField>
+          <FormField required label="Relation" :error="errors.relation" field="relation" class="col-12 col-md-6">
+            <template #default="{ id }">
+              <SelectField
+                :id="id"
+                v-model="editForm.relation"
+                :options="relations"
+                placeholder="Select relation"
+              />
+            </template>
+          </FormField>
         </div>
       
       </form>
@@ -212,7 +224,7 @@
 </template>
 
 <script setup>
-import { reactive, ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { reactive, ref, computed, onMounted, onBeforeUnmount, provide} from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useToast } from '@/composables/useToast'
 import { FAMILY_MANAGER_ROLES, INVITABLE_ROLE_OPTIONS, formatRoleLabel } from '@/constants/roles'
@@ -220,9 +232,15 @@ import api from '@/services/api'
 import AppOffcanvas from '@/components/AppOffcanvas.vue'
 import ConfirmModal from '@/components/ConfirmModal.vue'
 import ShimmerLoader from '@/components/ShimmerLoader.vue'
+import FormField from '@/components/FormField.vue'
+import SelectField from '@/components/SelectField.vue'
+import { useFormErrors } from '@/composables/useFormErrors'
 
 const auth = useAuthStore()
 const { showToast } = useToast()
+const { errors, clear: clearErrors, capture: captureErrors, clearField } = useFormErrors()
+// FormField clears its own message as the user edits.
+provide('clearFormField', clearField)
 const defaultInviteRole = INVITABLE_ROLE_OPTIONS[0].value
 
 const family = ref({})
@@ -301,6 +319,7 @@ async function saveFamily() {
 }
 
 function openInviteModal() {
+  clearErrors()
   Object.assign(inviteForm, { name: '', email: '', phone: '', role: defaultInviteRole, relation: '' })
   showInviteOffcanvas.value = true
 }
@@ -327,7 +346,8 @@ async function handleInvite() {
     showInviteOffcanvas.value = false
     loadMembers()
   } catch (err) {
-    showToast(getErrorMessage(err, 'Failed to invite member'), 'danger')
+    // 422 means per-field messages; anything else is a real failure.
+    if (!captureErrors(err)) showToast(getErrorMessage(err, 'Failed to invite member'), 'danger')
   } finally {
     inviteLoading.value = false
   }
@@ -365,7 +385,8 @@ async function handleEditMember() {
     showEditOffcanvas.value = false
     loadMembers()
   } catch (err) {
-    showToast(getErrorMessage(err, 'Failed to update member'), 'danger')
+    // 422 means per-field messages; anything else is a real failure.
+    if (!captureErrors(err)) showToast(getErrorMessage(err, 'Failed to update member'), 'danger')
   } finally {
     editLoading.value = false
   }

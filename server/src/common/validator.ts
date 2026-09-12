@@ -43,6 +43,45 @@ function isFile(v: any): v is UploadedFile {
   return !!v && typeof v === 'object' && 'mimetype' in v && 'size' in v;
 }
 
+/** PHP's is_numeric: numeric strings and numbers, but not '' or booleans. */
+function isNumericValue(v: any): boolean {
+  if (typeof v === 'number') return Number.isFinite(v);
+  if (typeof v !== 'string' || v.trim() === '') return false;
+  return !Number.isNaN(Number(v));
+}
+
+const NUMERIC_RULES = ['numeric', 'integer', 'decimal'];
+
+function hasRule(rules: string[], names: string[]): boolean {
+  return rules.some((r) => names.includes(r.split(':')[0]));
+}
+
+/**
+ * Laravel's `Validator::getSize()`. The critical detail is that a numeric
+ * comparison happens only when the field also carries `numeric`/`integer`/
+ * `decimal` — NOT whenever the value happens to look like a number. Sniffing
+ * the value instead made `document_number: 'string|max:100'` reject "635" as
+ * "greater than 100" (it is three characters), `phone: 'string|max:20'` reject
+ * every real phone number, and `password: 'string|min:8'` accept a seven-digit
+ * password because 1234567 >= 8.
+ */
+function sizeOf(value: any, rules: string[]): number {
+  if (isNumericValue(value) && hasRule(rules, NUMERIC_RULES)) return Number(value);
+  if (Array.isArray(value)) return value.length;
+  if (isFile(value)) return value.size / 1024;
+  return String(value ?? '').length;
+}
+
+type AttributeType = 'numeric' | 'array' | 'file' | 'string';
+
+/** Laravel's `Validator::getAttributeType()`, which picks the message variant. */
+function attributeType(value: any, rules: string[]): AttributeType {
+  if (hasRule(rules, NUMERIC_RULES)) return 'numeric';
+  if (hasRule(rules, ['array'])) return 'array';
+  if (isFile(value)) return 'file';
+  return 'string';
+}
+
 /** Laravel accepts these as booleans, including the string forms from FormData. */
 function toBool(v: any): boolean | null {
   if (v === true || v === 1 || v === '1' || v === 'true') return true;
@@ -143,11 +182,19 @@ export class Validator {
   private async applyRules(field: string, value: any, rules: string[]) {
     for (const rule of rules) {
       const [name, arg] = rule.split(/:(.+)/);
-      await this.applyRule(field, value, name, arg);
+      // `rules` goes along because min/max/size are sized against the field's
+      // declared type, not the shape of the value. See sizeOf().
+      await this.applyRule(field, value, name, arg, rules);
     }
   }
 
-  private async applyRule(field: string, value: any, name: string, arg?: string) {
+  private async applyRule(
+    field: string,
+    value: any,
+    name: string,
+    arg?: string,
+    rules: string[] = [],
+  ) {
     const a = attr(field);
 
     switch (name) {
@@ -155,6 +202,15 @@ export class Validator {
       case 'sometimes':
       case 'nullable':
       case 'file':
+        return;
+
+      // Presence rules, already resolved in applyField() before the rule loop
+      // runs. They reach here whenever the field DOES have a value, and must be
+      // no-ops rather than falling through to the "unsupported rule" throw.
+      case 'required_if':
+      case 'required_without':
+      case 'required_with':
+      case 'required_unless':
         return;
 
       case 'string':
@@ -198,38 +254,42 @@ export class Validator {
         return;
       }
 
-      case 'size':
-        if (String(value).length !== Number(arg))
-          this.add(field, `The ${a} field must be ${arg} characters.`);
+      case 'size': {
+        const n = Number(arg);
+        if (sizeOf(value, rules) !== n) {
+          this.add(field, {
+            numeric: `The ${a} field must be ${n}.`,
+            file: `The ${a} field must be ${n} kilobytes.`,
+            string: `The ${a} field must be ${n} characters.`,
+            array: `The ${a} field must contain ${n} items.`,
+          }[attributeType(value, rules)]);
+        }
         return;
+      }
 
       case 'min': {
         const n = Number(arg);
-        if (isFile(value)) {
-          if (value.size / 1024 < n)
-            this.add(field, `The ${a} field must be at least ${n} kilobytes.`);
-        } else if (typeof value === 'string' && !/^-?\d+(\.\d+)?$/.test(value)) {
-          if (value.length < n)
-            this.add(field, `The ${a} field must be at least ${n} characters.`);
-        } else if (Array.isArray(value)) {
-          if (value.length < n) this.add(field, `The ${a} field must have at least ${n} items.`);
-        } else if (Number(value) < n) {
-          this.add(field, `The ${a} field must be at least ${n}.`);
+        if (sizeOf(value, rules) < n) {
+          this.add(field, {
+            numeric: `The ${a} field must be at least ${n}.`,
+            file: `The ${a} field must be at least ${n} kilobytes.`,
+            string: `The ${a} field must be at least ${n} characters.`,
+            array: `The ${a} field must have at least ${n} items.`,
+          }[attributeType(value, rules)]);
         }
         return;
       }
 
       case 'max': {
+        // Laravel's file `max` is in kilobytes; sizeOf() handles that.
         const n = Number(arg);
-        if (isFile(value)) {
-          // Laravel's file `max` is in kilobytes.
-          if (value.size / 1024 > n)
-            this.add(field, `The ${a} field must not be greater than ${n} kilobytes.`);
-        } else if (typeof value === 'string' && !/^-?\d+(\.\d+)?$/.test(value)) {
-          if (value.length > n)
-            this.add(field, `The ${a} field must not be greater than ${n} characters.`);
-        } else if (Number(value) > n) {
-          this.add(field, `The ${a} field must not be greater than ${n}.`);
+        if (sizeOf(value, rules) > n) {
+          this.add(field, {
+            numeric: `The ${a} field must not be greater than ${n}.`,
+            file: `The ${a} field must not be greater than ${n} kilobytes.`,
+            string: `The ${a} field must not be greater than ${n} characters.`,
+            array: `The ${a} field must not have more than ${n} items.`,
+          }[attributeType(value, rules)]);
         }
         return;
       }

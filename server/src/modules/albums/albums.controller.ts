@@ -141,7 +141,12 @@ export class AlbumsController {
 
   @Post(':id/photos')
   @HttpCode(201)
-  @UseInterceptors(FilesInterceptor('photos'))
+  // The field name is `photos[]`, not `photos`: PHP collapses repeated
+  // `name[]` fields into an array, so the Vue client has always sent it that
+  // way. Multer has no such convention and rejects anything it is not
+  // explicitly told to expect, with "Unexpected field". Matching the existing
+  // client keeps the API contract identical, which is the point of the port.
+  @UseInterceptors(FilesInterceptor('photos[]'))
   async uploadPhotos(
     @Param('id') id: string,
     @UploadedFiles() photos: FileType[] | undefined,
