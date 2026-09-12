@@ -16,6 +16,10 @@
         <h3 class="fw-bold mb-1">Welcome back!</h3>
         <p class="text-muted small mb-4">Sign in to your account to continue.</p>
 
+        <div v-if="form.error" class="alert alert-danger py-2 small" role="alert">
+          <i class="bi bi-exclamation-circle me-1" />{{ form.error }}
+        </div>
+
         <form @submit.prevent="handleLogin">
           <div class="mb-3">
             <label class="form-label fw-semibold">Email Address</label>
@@ -72,9 +76,9 @@
 
         <p class="text-center text-muted small mb-0">
           Don't have an account?
-          <Link href="/register" class="text-primary fw-semibold">
+          <RouterLink to="/register" class="text-primary fw-semibold">
             Create one free
-          </Link>
+          </RouterLink>
         </p>
       </div>
     </div>
@@ -83,22 +87,23 @@
 
 <script setup>
 import { ref } from 'vue'
-import { Link, useForm, usePage } from '@inertiajs/vue3'
+import { useRouter } from 'vue-router'
+import { useForm } from '@/composables/useForm'
+import { useAuthStore } from '@/stores/auth'
 import AuthLeftPanel from '@/components/AuthLeftPanel.vue'
+
+const router = useRouter()
+const auth = useAuthStore()
 
 const form = useForm({ email: '', password: '' })
 const showPassword = ref(false)
-const page = usePage()
 
 async function handleLogin() {
-  form
-    .transform((data) => ({
-      ...data,
-      _token: page.props.csrf_token,
-    }))
-    .post('/login', {
-      preserveScroll: true,
-    })
+  const result = await form.run((data) => auth.login(data))
+  if (!result) return
+
+  // The API issues a token even when unverified so the OTP screen is reachable.
+  router.push(result.requires_verification ? { name: 'verify-email' } : { name: 'dashboard' })
 }
 </script>
 

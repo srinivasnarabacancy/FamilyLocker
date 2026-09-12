@@ -1,13 +1,8 @@
 import axios from 'axios'
-import { router } from '@inertiajs/vue3'
-
-function getCsrfToken() {
-  return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
-}
+import router from '@/router'
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || '/api',
-  withCredentials: true,
   headers: {
     Accept: 'application/json',
     'X-Requested-With': 'XMLHttpRequest',
@@ -16,15 +11,8 @@ const api = axios.create({
 
 api.interceptors.request.use(
   (config) => {
-    const csrfToken = getCsrfToken()
-
-    if (csrfToken) {
-      config.headers['X-CSRF-TOKEN'] = csrfToken
-    } else {
-      delete config.headers['X-CSRF-TOKEN']
-    }
-
-    // Attach Bearer token from localStorage if available
+    // Bearer tokens only. The Node API has no session/CSRF layer — the previous
+    // X-CSRF-TOKEN header existed for Laravel's stateful Sanctum guard.
     const token = localStorage.getItem('auth_token')
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`
@@ -40,14 +28,24 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 )
 
-// Response interceptor - handle auth errors
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    const status = error.response?.status
+
+    if (status === 401) {
       localStorage.removeItem('auth_token')
-      router.visit('/login')
+      // Avoid a redirect loop when the failing call IS the login attempt.
+      if (router.currentRoute.value.name !== 'login') {
+        router.push({ name: 'login' })
+      }
     }
+
+    // 403 from the API means the account exists but is not verified yet.
+    if (status === 403 && router.currentRoute.value.name !== 'verify-email') {
+      router.push({ name: 'verify-email' })
+    }
+
     return Promise.reject(error)
   }
 )
