@@ -35,3 +35,15 @@ export class UnauthorizedException extends ApiException {
     super(message, 401);
   }
 }
+
+/**
+ * Storage misconfiguration or an upstream failure from Supabase. A 500, but
+ * with the reason attached: these are almost always a wrong env var, and the
+ * generic "Server Error" gives the operator nothing to act on. The text is
+ * safe to expose — it names buckets and status codes, never credentials.
+ */
+export class StorageException extends ApiException {
+  constructor(message: string) {
+    super(message, 500);
+  }
+}

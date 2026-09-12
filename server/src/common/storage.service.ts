@@ -3,6 +3,7 @@ import { randomBytes } from 'crypto';
 import { promises as fs } from 'fs';
 import * as path from 'path';
 import { UploadedFile } from './validator';
+import { StorageException } from './errors';
 
 export interface StoredFile {
   buffer: Buffer;
@@ -65,11 +66,12 @@ export class StorageService {
     const missing = [
       !this.supabaseUrl && 'SUPABASE_URL',
       !this.supabaseKey && 'SUPABASE_SERVICE_KEY',
+      !process.env.SUPABASE_BUCKET && 'SUPABASE_BUCKET',
     ].filter(Boolean);
 
     if (missing.length) {
-      throw new Error(
-        `STORAGE_DRIVER=supabase but ${missing.join(' and ')} ` +
+      throw new StorageException(
+        `STORAGE_DRIVER=supabase but ${missing.join(', ')} ` +
           `${missing.length > 1 ? 'are' : 'is'} not set.`,
       );
     }
@@ -119,8 +121,18 @@ export class StorageService {
       await this.supabaseUpload(relative, file);
     } else {
       const target = path.join(this.root, relative);
-      await fs.mkdir(path.dirname(target), { recursive: true });
-      await fs.writeFile(target, file.buffer);
+      try {
+        await fs.mkdir(path.dirname(target), { recursive: true });
+        await fs.writeFile(target, file.buffer);
+      } catch (err: any) {
+        if (err?.code === 'EROFS' || err?.code === 'EACCES') {
+          throw new StorageException(
+            `Cannot write to ${this.root} (${err.code}). The filesystem is ` +
+              `read-only — set STORAGE_DRIVER=supabase.`,
+          );
+        }
+        throw err;
+      }
     }
 
     return relative;
@@ -182,7 +194,9 @@ export class StorageService {
     );
 
     if (!res.ok) {
-      throw new Error(`Supabase upload failed (${res.status}): ${await res.text()}`);
+      throw new StorageException(
+        `Supabase upload to bucket "${this.bucket}" failed (${res.status}): ${await res.text()}`,
+      );
     }
   }
 
@@ -196,7 +210,9 @@ export class StorageService {
 
     if (res.status === 404) return null;
     if (!res.ok) {
-      throw new Error(`Supabase download failed (${res.status}): ${await res.text()}`);
+      throw new StorageException(
+        `Supabase download from bucket "${this.bucket}" failed (${res.status}): ${await res.text()}`,
+      );
     }
 
     return {
