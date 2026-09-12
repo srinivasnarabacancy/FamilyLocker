@@ -3,7 +3,7 @@
   "buildCommand": "npm install && npm run build && cd server && npm install && npx prisma generate && npm run build",
   "outputDirectory": "dist",
   "functions": {
-    "api/index.cjs": {
+    "api/index.js": {
       "maxDuration": 60,
       "includeFiles": "server/**"
     }
@@ -17,11 +17,11 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "/api/index.cjs"
+      "destination": "/api/index.js"
     },
     {
       "source": "/storage/(.*)",
-      "destination": "/api/index.cjs"
+      "destination": "/api/index.js"
     },
     {
       "source": "/((?!assets/|favicon\\.svg).*)",
