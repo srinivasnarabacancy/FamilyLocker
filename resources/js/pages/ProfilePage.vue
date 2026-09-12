@@ -157,15 +157,15 @@
 
 <script setup>
 import { reactive, ref, computed, watch } from 'vue'
-import { router, usePage } from '@inertiajs/vue3'
+import { useAuthStore } from '@/stores/auth'
 import { useToast } from '@/composables/useToast'
 import { formatRoleLabel } from '@/constants/roles'
 import api from '@/services/api'
 
-const page = usePage()
+const auth = useAuthStore()
 const { showToast } = useToast()
 
-const user = computed(() => page.props.auth?.user ?? {})
+const user = computed(() => auth.user ?? {})
 
 const profileForm = reactive({ name: '', phone: '', date_of_birth: '', relation: '' })
 const savingProfile = ref(false)
@@ -208,7 +208,7 @@ async function saveProfile() {
   savingProfile.value = true
   try {
     await api.post('/auth/profile', profileForm)
-    router.reload({ only: ['auth'], preserveState: true, preserveScroll: true })
+    await auth.fetchMe()
     showToast('Profile updated!', 'success')
   } catch (err) {
     showToast(err.response?.data?.message ?? 'Failed to update', 'danger')
@@ -263,7 +263,7 @@ async function uploadAvatar() {
   fd.append('avatar', pendingAvatar.value)
   try {
     await api.post('/auth/profile', fd)
-    router.reload({ only: ['auth'], preserveState: true, preserveScroll: true })
+    await auth.fetchMe()
     pendingAvatar.value = null
     avatarPreview.value = null
     showToast('Avatar updated!', 'success')
@@ -280,7 +280,7 @@ async function removeAvatar() {
   removingAvatar.value = true
   try {
     await api.post('/auth/profile', { remove_avatar: true })
-    router.reload({ only: ['auth'], preserveState: true, preserveScroll: true })
+    await auth.fetchMe()
     pendingAvatar.value = null
     avatarPreview.value = null
     showToast('Avatar removed!', 'success')
