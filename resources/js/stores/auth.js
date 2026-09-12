@@ -2,6 +2,13 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import api from '@/services/api'
 
+/**
+ * Where the live code's deadline is kept for the signed-in verification path.
+ * sessionStorage rather than component state so refreshing the OTP screen does
+ * not restart the countdown at the full ten minutes.
+ */
+const OTP_EXPIRY_KEY = 'otp_expires_at'
+
 export const useAuthStore = defineStore('auth', () => {
   const user = ref(null)
   const token = ref(localStorage.getItem('auth_token') || null)
@@ -34,6 +41,25 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = null
     initialized.value = true
     localStorage.removeItem('auth_token')
+    sessionStorage.removeItem(OTP_EXPIRY_KEY)
+  }
+
+  /**
+   * The deadline of the code currently in the user's inbox, as an ISO-8601
+   * string, or null when none is known. Always an absolute instant — a
+   * remaining-seconds count would drift while the tab is backgrounded and
+   * would be lost on reload.
+   */
+  function otpExpiry() {
+    return sessionStorage.getItem(OTP_EXPIRY_KEY)
+  }
+
+  function setOtpExpiry(expiresAt) {
+    if (expiresAt) {
+      sessionStorage.setItem(OTP_EXPIRY_KEY, expiresAt)
+    } else {
+      sessionStorage.removeItem(OTP_EXPIRY_KEY)
+    }
   }
 
   /**
@@ -45,13 +71,75 @@ export const useAuthStore = defineStore('auth', () => {
   async function login(credentials) {
     const { data } = await api.post('/auth/login', credentials)
     setSession(data.data)
+    // Present only when the account is unverified and a code went out.
+    setOtpExpiry(data.data.otp_expires_at ?? null)
     return data.data
   }
 
+  /**
+   * Starts a sign-up. No account exists yet — the API holds the details and
+   * emails a code, returning an opaque token used to finish or resend.
+   *
+   * The token lives in sessionStorage so a page refresh on the OTP screen does
+   * not strand the user, and it is cleared as soon as the account is created.
+   */
   async function register(payload) {
     const { data } = await api.post('/auth/register', payload)
+
+    sessionStorage.setItem('pending_registration', JSON.stringify({
+      token: data.data.pending_token,
+      email: data.data.email,
+      expiresAt: data.data.otp_expires_at,
+    }))
+
+    return data.data
+  }
+
+  /** The sign-up awaiting a code, if any. */
+  function pendingRegistration() {
+    try {
+      return JSON.parse(sessionStorage.getItem('pending_registration') || 'null')
+    } catch {
+      return null
+    }
+  }
+
+  function clearPendingRegistration() {
+    sessionStorage.removeItem('pending_registration')
+  }
+
+  /** Completes the sign-up: the account is created only now. */
+  async function verifyRegistration(otp) {
+    const pending = pendingRegistration()
+    if (!pending) throw new Error('No sign-up in progress.')
+
+    const { data } = await api.post('/auth/register/verify', {
+      pending_token: pending.token,
+      otp,
+    })
+
+    clearPendingRegistration()
     setSession(data.data)
     return data.data
+  }
+
+  async function resendRegistrationOtp() {
+    const pending = pendingRegistration()
+    if (!pending) throw new Error('No sign-up in progress.')
+
+    const { data } = await api.post('/auth/register/resend', {
+      pending_token: pending.token,
+    })
+
+    // Refresh the stored deadline so a reload after a resend still counts down
+    // against the code that is actually live.
+    const expiresAt = data.data?.otp_expires_at ?? null
+    sessionStorage.setItem(
+      'pending_registration',
+      JSON.stringify({ ...pending, expiresAt }),
+    )
+
+    return { ...data, expiresAt }
   }
 
   async function logout() {
@@ -66,12 +154,15 @@ export const useAuthStore = defineStore('auth', () => {
     const { data } = await api.post('/auth/verify-otp', { otp })
     // A successful verification returns the refreshed user.
     if (data.data) user.value = data.data
+    setOtpExpiry(null)
     return data
   }
 
   async function resendVerification() {
     const { data } = await api.post('/auth/resend-verification')
-    return data
+    const expiresAt = data.data?.otp_expires_at ?? null
+    setOtpExpiry(expiresAt)
+    return { ...data, expiresAt }
   }
 
   async function fetchMe() {
@@ -124,7 +215,13 @@ export const useAuthStore = defineStore('auth', () => {
     register,
     logout,
     verifyOtp,
+    pendingRegistration,
+    clearPendingRegistration,
+    verifyRegistration,
+    resendRegistrationOtp,
     resendVerification,
+    otpExpiry,
+    setOtpExpiry,
     fetchMe,
     initialize,
     updateProfile,
