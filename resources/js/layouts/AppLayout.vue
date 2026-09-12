@@ -1,5 +1,6 @@
 <template>
   <div class="app-layout">
+    <CsrfMetaSync />
     <!-- Sidebar Overlay (mobile) -->
     <div
       v-if="sidebarOpen"
@@ -27,41 +28,41 @@
       <!-- Nav -->
       <nav class="sidebar__nav">
         <span class="nav-section-title">Main Menu</span>
-        <RouterLink
+        <Link
           v-for="item in mainNavItems"
           :key="item.href"
-          :to="item.href"
+          :href="item.href"
           class="nav-link"
-          :class="{ active: isActive(item.routes) }"
+          :class="{ active: isActive(item.components) }"
           @click="sidebarOpen = false"
         >
           <span class="nav-icon"><i :class="item.icon" /></span>
           <span class="nav-label">{{ item.label }}</span>
-          <span v-if="isActive(item.routes)" class="nav-active-dot" />
-        </RouterLink>
+          <span v-if="isActive(item.components)" class="nav-active-dot" />
+        </Link>
 
         <div class="nav-divider" />
         <span class="nav-section-title">Account</span>
-        <RouterLink
-          to="/app/family"
+        <Link
+          href="/app/family"
           class="nav-link"
-          :class="{ active: isActive(['family']) }"
+          :class="{ active: isActive(['FamilyPage']) }"
           @click="sidebarOpen = false"
         >
           <span class="nav-icon"><i class="bi bi-people" /></span>
           <span class="nav-label">Family</span>
-          <span v-if="isActive(['family'])" class="nav-active-dot" />
-        </RouterLink>
-        <RouterLink
-          to="/app/profile"
+          <span v-if="isActive(['FamilyPage'])" class="nav-active-dot" />
+        </Link>
+        <Link
+          href="/app/profile"
           class="nav-link"
-          :class="{ active: isActive(['profile']) }"
+          :class="{ active: isActive(['ProfilePage']) }"
           @click="sidebarOpen = false"
         >
           <span class="nav-icon"><i class="bi bi-person-circle" /></span>
           <span class="nav-label">Profile</span>
-          <span v-if="isActive(['profile'])" class="nav-active-dot" />
-        </RouterLink>
+          <span v-if="isActive(['ProfilePage'])" class="nav-active-dot" />
+        </Link>
       </nav>
 
     </aside>
@@ -110,10 +111,10 @@
               </div>
             </div>
             <div class="topbar-dropdown__divider" />
-            <RouterLink to="/app/profile" class="topbar-dropdown__item" @click="userMenuOpen = false">
+            <Link href="/app/profile" class="topbar-dropdown__item" @click="userMenuOpen = false">
               <i class="bi bi-person-circle" />
               My Profile
-            </RouterLink>
+            </Link>
             <button class="topbar-dropdown__item topbar-dropdown__item--danger" @click="userMenuOpen = false; handleLogout()">
               <i class="bi bi-box-arrow-right" />
               Logout
@@ -124,7 +125,7 @@
 
       <!-- Page body -->
       <main class="main-content__body">
-        <router-view />
+        <slot />
       </main>
     </div>
 
@@ -147,32 +148,28 @@
 
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { Link, router, usePage } from '@inertiajs/vue3'
+import CsrfMetaSync from '@/components/CsrfMetaSync.vue'
 import ToastContainer from '@/components/ToastContainer.vue'
 import ConfirmModal from '@/components/ConfirmModal.vue'
 import { formatRoleLabel } from '@/constants/roles'
-import { useAuthStore } from '@/stores/auth'
 
-const route = useRoute()
-const router = useRouter()
-const auth = useAuthStore()
-
+const page = usePage()
 const sidebarOpen = ref(false)
 
-// `routes` replaces the Inertia component names the active check used to match.
 const mainNavItems = [
-  { href: '/app/dashboard', label: 'Dashboard', icon: 'bi bi-grid-1x2', routes: ['dashboard'] },
-  { href: '/app/documents', label: 'Documents', icon: 'bi bi-file-earmark-text', routes: ['documents'] },
-  { href: '/app/expenses', label: 'Expenses', icon: 'bi bi-wallet2', routes: ['expenses'] },
-  { href: '/app/medical', label: 'Medical', icon: 'bi bi-heart-pulse', routes: ['medical'] },
-  { href: '/app/albums', label: 'Albums', icon: 'bi bi-images', routes: ['albums', 'album-detail'] },
-  { href: '/app/bills', label: 'Bills', icon: 'bi bi-receipt', routes: ['bills'] },
-  { href: '/app/tasks', label: 'Tasks', icon: 'bi bi-check2-square', routes: ['tasks'] },
-  { href: '/app/reminders', label: 'Reminders', icon: 'bi bi-bell', routes: ['reminders'] },
+  { href: '/app/dashboard', label: 'Dashboard', icon: 'bi bi-grid-1x2', components: ['DashboardPage'] },
+  { href: '/app/documents', label: 'Documents', icon: 'bi bi-file-earmark-text', components: ['DocumentsPage'] },
+  { href: '/app/expenses', label: 'Expenses', icon: 'bi bi-wallet2', components: ['ExpensesPage'] },
+  { href: '/app/medical', label: 'Medical', icon: 'bi bi-heart-pulse', components: ['MedicalPage'] },
+  { href: '/app/albums', label: 'Albums', icon: 'bi bi-images', components: ['AlbumsPage', 'AlbumDetailPage'] },
+  { href: '/app/bills', label: 'Bills', icon: 'bi bi-receipt', components: ['BillsPage'] },
+  { href: '/app/tasks', label: 'Tasks', icon: 'bi bi-check2-square', components: ['TasksPage'] },
+  { href: '/app/reminders', label: 'Reminders', icon: 'bi bi-bell', components: ['RemindersPage'] },
 ]
 
-const user = computed(() => auth.user)
-const currentPageTitle = computed(() => route.meta.title ?? 'FamilyLocker')
+const user = computed(() => page.props.auth?.user ?? null)
+const currentPageTitle = computed(() => page.props.pageTitle ?? 'FamilyLocker')
 
 const userInitials = computed(() => {
   const name = user.value?.name ?? ''
@@ -184,13 +181,13 @@ const userInitials = computed(() => {
     .toUpperCase()
 })
 
-function isActive(routeNames) {
-  return routeNames.includes(route.name)
+function isActive(components) {
+  return components.includes(page.component)
 }
 
 const userMenuOpen = ref(false)
 
-function closeUserMenu() {
+function closeUserMenu(e) {
   userMenuOpen.value = false
 }
 onMounted(() => document.addEventListener('click', closeUserMenu))
@@ -205,12 +202,9 @@ function handleLogout() {
 
 async function confirmLogout() {
   loggingOut.value = true
-  try {
-    await auth.logout()
-    router.push({ name: 'login' })
-  } finally {
-    loggingOut.value = false
-    showLogoutModal.value = false
-  }
+  localStorage.removeItem('auth_token')
+  router.post('/logout', {
+    _token: page.props.csrf_token,
+  })
 }
 </script>
