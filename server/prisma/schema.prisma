@@ -8,6 +8,11 @@
 
 generator client {
   provider = "prisma-client-js"
+  // Vercel's Node runtime is RHEL-based, not the local glibc target. Without
+  // this the deployed function fails at runtime with "Query engine binary for
+  // current platform could not be found" — the engine is chosen at generate
+  // time, so it must be declared here rather than fixed after deploy.
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
 }
 
 datasource db {

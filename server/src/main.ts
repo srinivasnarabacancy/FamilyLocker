@@ -1,39 +1,26 @@
 import 'dotenv/config';
 import { NestFactory } from '@nestjs/core';
 import { Logger } from '@nestjs/common';
-import { json, urlencoded, static as serveStatic } from 'express';
+import { static as serveStatic } from 'express';
 import { existsSync } from 'fs';
 import * as path from 'path';
 import { AppModule } from './app.module';
-import { AllExceptionsFilter } from './common/all-exceptions.filter';
+import { configureApp, enableBigIntSerialization } from './configure-app';
 
 /**
- * BigInt has no JSON representation, and Prisma returns every id as one.
- * Presenters convert the ids they know about; this is the backstop so an
- * unconverted value degrades to a number instead of throwing at serialization
- * time, deep inside a response.
+ * Long-running server, used for local development and any host that runs a
+ * persistent process. Vercel uses `serverless.ts` instead, which shares the
+ * same configuration but exports a handler rather than binding a port.
  */
-(BigInt.prototype as any).toJSON = function () {
-  return Number(this);
-};
-
 async function bootstrap() {
+  enableBigIntSerialization();
+
   const app = await NestFactory.create(AppModule, { bodyParser: false });
 
-  app.use(json({ limit: '25mb' }));
-  app.use(urlencoded({ extended: true, limit: '25mb' }));
+  configureApp(app);
 
-  // Matches Laravel's `api` route group prefix.
-  app.setGlobalPrefix('api');
-
-  app.useGlobalFilters(new AllExceptionsFilter());
-
-  // The SPA is served from a different origin in development.
-  app.enableCors({
-    origin: (process.env.CORS_ORIGINS ?? 'http://localhost:5173,http://localhost:8000').split(','),
-    credentials: true,
-  });
-
+  // Only this entry point serves the SPA and uploads. On Vercel the CDN serves
+  // static files and Supabase serves uploads, so the function never sees them.
   serveSpaAndUploads(app);
 
   const port = Number(process.env.PORT ?? 3000);
