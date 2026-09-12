@@ -1,0 +1,13 @@
+{
+  "$comment": [
+    "Scopes api/ to CommonJS. Node resolves module type from the NEAREST",
+    "package.json, so this overrides the root's \"type\": \"module\" (which Vite",
+    "needs) without renaming the file.",
+    "",
+    "Why it matters: Vercel bundles ESM functions with esbuild, and that breaks",
+    "NestJS — its dependency injection relies on emitDecoratorMetadata and",
+    "runtime reflection that does not survive bundling. A .cjs file would also",
+    "be CommonJS but Vercel does not detect .cjs as a Serverless Function."
+  ],
+  "type": "commonjs"
+}

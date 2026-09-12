@@ -20,3 +20,6 @@
 /storage/pail
 /vendor
 Thumbs.db
+
+# SPA build output (Vite)
+/dist
