@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { randomInt, randomBytes } from 'crypto';
+import { randomInt, randomBytes, timingSafeEqual } from 'crypto';
 import { User } from '@prisma/client';
 import { PrismaService } from '../common/prisma.service';
 import { MailService } from '../mail/mail.service';
@@ -24,37 +24,52 @@ export class AuthService {
     return !user.email || user.emailVerifiedAt !== null;
   }
 
-  /** Port of User::generateAndSendOtp(). No-op for verified or e-mail-less users. */
-  async generateAndSendOtp(user: User): Promise<void> {
-    if (!user.email || AuthService.hasVerifiedEmail(user)) return;
+  /**
+   * Port of User::generateAndSendOtp(). No-op for verified or e-mail-less users.
+   *
+   * Returns when the new code expires so the caller can hand the client an
+   * absolute deadline to count down against; null when no code was issued.
+   */
+  async generateAndSendOtp(user: User): Promise<Date | null> {
+    if (!user.email || AuthService.hasVerifiedEmail(user)) return null;
 
     const otp = String(randomInt(100000, 1000000));
+    const expiresAt = new Date(Date.now() + OTP_TTL_MINUTES * 60_000);
 
     await this.prisma.user.update({
       where: { id: user.id },
       data: {
         otpCode: otp,
-        otpExpiresAt: new Date(Date.now() + OTP_TTL_MINUTES * 60_000),
+        otpExpiresAt: expiresAt,
         updatedAt: new Date(),
       },
     });
 
     await this.mail.sendOtp(user.email, user.name, otp);
+
+    return expiresAt;
   }
 
   /** Port of User::verifyOtp(). Consumes the code on success. */
   async verifyOtp(user: User, code: string): Promise<boolean> {
     if (
       !user.otpCode ||
-      user.otpCode !== code ||
       !user.otpExpiresAt ||
-      user.otpExpiresAt.getTime() < Date.now()
+      user.otpExpiresAt.getTime() < Date.now() ||
+      !AuthService.codesMatch(user.otpCode, code)
     ) {
       return false;
     }
 
     await this.markEmailAsVerified(user.id);
     return true;
+  }
+
+  /** Constant-time comparison, so response timing cannot leak the code. */
+  private static codesMatch(expected: string, submitted: string): boolean {
+    const a = Buffer.from(expected, 'utf8');
+    const b = Buffer.from(String(submitted ?? ''), 'utf8');
+    return a.length === b.length && timingSafeEqual(a, b);
   }
 
   /** Port of User::markEmailAsVerified(). */
