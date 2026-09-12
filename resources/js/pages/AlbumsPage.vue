@@ -106,7 +106,7 @@
 
 <script setup>
 import { reactive, ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { router } from '@inertiajs/vue3'
 import { Modal } from 'bootstrap'
 import { useAlbumStore } from '@/stores/albums'
 import { useToast } from '@/composables/useToast'
@@ -125,7 +125,7 @@ function formatDate(d) {
 }
 
 function goToAlbum(album) {
-  router.push({ name: 'album-detail', params: { id: album.id } })
+  router.visit(`/app/albums/${album.id}`)
 }
 
 function openModal(album = null) {

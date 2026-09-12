@@ -116,30 +116,30 @@
 
       <!-- ── Quick Actions ───────────────────────────────── -->
       <div class="dash-quick-actions mb-4">
-        <RouterLink to="/app/documents" class="dash-qa-btn">
+        <Link href="/app/documents" class="dash-qa-btn">
           <span class="dash-qa-btn__icon qa-icon--purple"><i class="bi bi-file-earmark-plus" /></span>
           <span>Add Document</span>
-        </RouterLink>
-        <RouterLink to="/app/expenses" class="dash-qa-btn">
+        </Link>
+        <Link href="/app/expenses" class="dash-qa-btn">
           <span class="dash-qa-btn__icon qa-icon--green"><i class="bi bi-plus-circle" /></span>
           <span>Log Expense</span>
-        </RouterLink>
-        <RouterLink to="/app/tasks" class="dash-qa-btn">
+        </Link>
+        <Link href="/app/tasks" class="dash-qa-btn">
           <span class="dash-qa-btn__icon qa-icon--blue"><i class="bi bi-check2-circle" /></span>
           <span>New Task</span>
-        </RouterLink>
-        <RouterLink to="/app/bills" class="dash-qa-btn">
+        </Link>
+        <Link href="/app/bills" class="dash-qa-btn">
           <span class="dash-qa-btn__icon qa-icon--orange"><i class="bi bi-receipt-cutoff" /></span>
           <span>Add Bill</span>
-        </RouterLink>
-        <RouterLink to="/app/medical" class="dash-qa-btn">
+        </Link>
+        <Link href="/app/medical" class="dash-qa-btn">
           <span class="dash-qa-btn__icon qa-icon--red"><i class="bi bi-heart-pulse" /></span>
           <span>Medical</span>
-        </RouterLink>
-        <RouterLink to="/app/albums" class="dash-qa-btn">
+        </Link>
+        <Link href="/app/albums" class="dash-qa-btn">
           <span class="dash-qa-btn__icon qa-icon--yellow"><i class="bi bi-images" /></span>
           <span>Albums</span>
-        </RouterLink>
+        </Link>
       </div>
 
       <!-- ── Main Content Grid ───────────────────────────── -->
@@ -156,7 +156,7 @@
                 <h6 class="dash-card__title">Monthly Expenses</h6>
                 <p class="dash-card__subtitle mb-0">Last 6 months overview</p>
               </div>
-              <RouterLink to="/app/expenses" class="dash-card__link">View All <i class="bi bi-arrow-right ms-1" /></RouterLink>
+              <Link href="/app/expenses" class="dash-card__link">View All <i class="bi bi-arrow-right ms-1" /></Link>
             </div>
             <div class="dash-card__body">
               <div v-if="dashData.monthly_expenses?.length" style="height:210px">
@@ -165,7 +165,7 @@
               <div v-else class="dash-empty">
                 <div class="dash-empty__icon"><i class="bi bi-bar-chart-line" /></div>
                 <p class="dash-empty__text">No expense data yet</p>
-                <RouterLink to="/app/expenses" class="btn btn-sm btn-primary px-4">Add first expense</RouterLink>
+                <Link href="/app/expenses" class="btn btn-sm btn-primary px-4">Add first expense</Link>
               </div>
             </div>
           </div>
@@ -177,7 +177,7 @@
                 <h6 class="dash-card__title">Pending Tasks</h6>
                 <p class="dash-card__subtitle mb-0">{{ dashData.pending_tasks?.length || 0 }} tasks need attention</p>
               </div>
-              <RouterLink to="/app/tasks" class="dash-card__link">View All <i class="bi bi-arrow-right ms-1" /></RouterLink>
+              <Link href="/app/tasks" class="dash-card__link">View All <i class="bi bi-arrow-right ms-1" /></Link>
             </div>
             <div class="dash-card__body">
               <template v-if="dashData.pending_tasks?.length">
@@ -253,7 +253,7 @@
                 <h6 class="dash-card__title">Upcoming Bills</h6>
                 <p class="dash-card__subtitle mb-0">Due in next 30 days</p>
               </div>
-              <RouterLink to="/app/bills" class="dash-card__link">View All <i class="bi bi-arrow-right ms-1" /></RouterLink>
+              <Link href="/app/bills" class="dash-card__link">View All <i class="bi bi-arrow-right ms-1" /></Link>
             </div>
             <div class="dash-card__body">
               <template v-if="dashData.upcoming_bills?.length">
@@ -289,7 +289,7 @@
                 <h6 class="dash-card__title">Expiring Documents</h6>
                 <p class="dash-card__subtitle mb-0">Needs renewal soon</p>
               </div>
-              <RouterLink to="/app/documents" class="dash-card__link">View All <i class="bi bi-arrow-right ms-1" /></RouterLink>
+              <Link href="/app/documents" class="dash-card__link">View All <i class="bi bi-arrow-right ms-1" /></Link>
             </div>
             <div class="dash-card__body">
               <template v-if="dashData.expiring_documents?.length">
@@ -321,7 +321,7 @@
                 <h6 class="dash-card__title">Appointments</h6>
                 <p class="dash-card__subtitle mb-0">Upcoming medical visits</p>
               </div>
-              <RouterLink to="/app/medical" class="dash-card__link">View All <i class="bi bi-arrow-right ms-1" /></RouterLink>
+              <Link href="/app/medical" class="dash-card__link">View All <i class="bi bi-arrow-right ms-1" /></Link>
             </div>
             <div class="dash-card__body">
               <template v-if="dashData.upcoming_appointments?.length">
@@ -356,7 +356,7 @@
                 <h6 class="dash-card__title">Upcoming Reminders</h6>
                 <p class="dash-card__subtitle mb-0">Birthdays &amp; special occasions</p>
               </div>
-              <RouterLink to="/app/reminders" class="dash-card__link">View All <i class="bi bi-arrow-right ms-1" /></RouterLink>
+              <Link href="/app/reminders" class="dash-card__link">View All <i class="bi bi-arrow-right ms-1" /></Link>
             </div>
             <div class="dash-card__body">
               <template v-if="dashData.upcoming_reminders?.length">
@@ -384,7 +384,7 @@
               <div v-else class="dash-empty">
                 <div class="dash-empty__icon"><i class="bi bi-bell" /></div>
                 <p class="dash-empty__text">No upcoming occasions</p>
-                <RouterLink to="/app/reminders" class="btn btn-sm btn-primary px-4">Add Reminder</RouterLink>
+                <Link href="/app/reminders" class="btn btn-sm btn-primary px-4">Add Reminder</Link>
               </div>
             </div>
           </div>
@@ -397,7 +397,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { useAuthStore } from '@/stores/auth'
+import { Link, usePage } from '@inertiajs/vue3'
 import { Bar } from 'vue-chartjs'
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js'
 import { useDashboardStore } from '@/stores/dashboard'
@@ -405,11 +405,11 @@ import ShimmerLoader from '@/components/ShimmerLoader.vue'
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 
-const auth = useAuthStore()
+const page = usePage()
 const dashboardStore = useDashboardStore()
 const loading = computed(() => dashboardStore.loading)
 const dashData = computed(() => dashboardStore.data)
-const user = computed(() => auth.user)
+const user = computed(() => page.props.auth?.user ?? null)
 
 const today = new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
 const todayDay = new Date().toLocaleDateString('en-IN', { weekday: 'long' })
