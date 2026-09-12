@@ -1,0 +1,27 @@
+{
+  "$comment": [
+    "Node deployment config. NOT ACTIVE — vercel.json still deploys the PHP app.",
+    "To cut production over to the Node stack:  mv vercel.node.json vercel.json",
+    "Required env vars on Vercel: DATABASE_URL, DIRECT_URL, APP_URL, CRON_SECRET,",
+    "MAIL_*, STORAGE_DRIVER=supabase, SUPABASE_URL, SUPABASE_SERVICE_KEY, SUPABASE_BUCKET.",
+    "CRON_SECRET must be set or /api/cron/reminders rejects every call."
+  ],
+  "version": 2,
+  "buildCommand": "npm install && npm run build && cd server && npm install && npx prisma generate && npm run build",
+  "outputDirectory": "dist",
+  "functions": {
+    "server/dist/main.js": {
+      "maxDuration": 60
+    }
+  },
+  "crons": [
+    {
+      "path": "/api/cron/reminders",
+      "schedule": "0 8 * * *"
+    }
+  ],
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/server/dist/main.js" },
+    { "source": "/((?!assets/|favicon).*)", "destination": "/index.html" }
+  ]
+}

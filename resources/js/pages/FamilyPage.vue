@@ -213,7 +213,7 @@
 
 <script setup>
 import { reactive, ref, computed, onMounted, onBeforeUnmount } from 'vue'
-import { usePage } from '@inertiajs/vue3'
+import { useAuthStore } from '@/stores/auth'
 import { useToast } from '@/composables/useToast'
 import { FAMILY_MANAGER_ROLES, INVITABLE_ROLE_OPTIONS, formatRoleLabel } from '@/constants/roles'
 import api from '@/services/api'
@@ -221,7 +221,7 @@ import AppOffcanvas from '@/components/AppOffcanvas.vue'
 import ConfirmModal from '@/components/ConfirmModal.vue'
 import ShimmerLoader from '@/components/ShimmerLoader.vue'
 
-const page = usePage()
+const auth = useAuthStore()
 const { showToast } = useToast()
 const defaultInviteRole = INVITABLE_ROLE_OPTIONS[0].value
 
@@ -254,7 +254,7 @@ function closeMenus() {
   openMenuId.value = null
 }
 
-const currentUser = computed(() => page.props.auth?.user ?? null)
+const currentUser = computed(() => auth.user ?? null)
 const canManageFamily = computed(() => FAMILY_MANAGER_ROLES.includes(currentUser.value?.role ?? ''))
 const inviteRoleOptions = INVITABLE_ROLE_OPTIONS
 const inviteActionLabel = computed(() => inviteForm.email?.trim() ? 'Send Invite' : 'Add Member')
