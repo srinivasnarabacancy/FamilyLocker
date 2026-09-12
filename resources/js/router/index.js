@@ -33,9 +33,8 @@ const routes = [
         path: 'verify-email',
         name: 'verify-email',
         component: VerifyEmailPage,
-        // Reachable two ways: mid sign-up (no account exists yet, so no
-        // session), or signed in with an address still unverified.
-        meta: { allowUnverified: true, title: 'Verify Email' },
+        // Reachable only while signed in but unverified.
+        meta: { requiresAuth: true, allowUnverified: true, title: 'Verify Email' },
       },
     ],
   },
@@ -77,12 +76,6 @@ const router = createRouter({
 router.beforeEach(async (to) => {
   const auth = useAuthStore()
   await auth.initialize()
-
-  // A sign-up awaiting its code has no session yet, so it is admitted to the
-  // verification screen and nowhere else.
-  if (to.name === 'verify-email' && !auth.isAuthenticated) {
-    return auth.pendingRegistration() ? true : { name: 'register' }
-  }
 
   if (to.meta.requiresAuth && !auth.isAuthenticated) {
     return { name: 'login' }

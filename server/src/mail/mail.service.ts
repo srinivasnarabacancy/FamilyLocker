@@ -52,46 +52,9 @@ export class MailService {
     return this.transporter;
   }
 
-  /**
-   * Brevo's transactional HTTP API. Preferred over SMTP when BREVO_API_KEY is
-   * present: no SMTP handshake, which is faster and more reliable on
-   * serverless, and it fails with a readable JSON error rather than an opaque
-   * SMTP code.
-   *
-   * The key is read from the environment on the server only — it is never sent
-   * to the browser and must never appear in a VITE_* variable.
-   */
-  private async sendViaBrevo(to: string, subject: string, html: string): Promise<void> {
-    const res = await fetch('https://api.brevo.com/v3/smtp/email', {
-      method: 'POST',
-      headers: {
-        'api-key': process.env.BREVO_API_KEY!,
-        'content-type': 'application/json',
-        accept: 'application/json',
-      },
-      body: JSON.stringify({
-        sender: { name: this.from.name, email: this.from.address },
-        to: [{ email: to }],
-        subject,
-        htmlContent: html,
-      }),
-      signal: AbortSignal.timeout(15_000),
-    });
-
-    if (!res.ok) {
-      const body = await res.text();
-      // Brevo reports an unverified sender here, which is the usual first failure.
-      throw new Error(`Brevo API ${res.status}: ${body}`);
-    }
-  }
-
   private async send(to: string, subject: string, html: string): Promise<void> {
     try {
-      if (process.env.BREVO_API_KEY) {
-        await this.sendViaBrevo(to, subject, html);
-      } else {
-        await this.transport().sendMail({ from: this.from, to, subject, html });
-      }
+      await this.transport().sendMail({ from: this.from, to, subject, html });
     } catch (err: any) {
       // Matches Laravel's behaviour at the call sites, which report() and carry
       // on rather than failing the user's request.

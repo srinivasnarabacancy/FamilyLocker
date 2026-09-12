@@ -9,7 +9,6 @@ import { ActivityLogService } from './common/activity-log.service';
 import { ThrottleGuard } from './common/throttle.guard';
 import { MailService } from './mail/mail.service';
 import { AuthService } from './auth/auth.service';
-import { RegistrationService } from './auth/registration.service';
 import { TokenService } from './auth/token.service';
 import { AuthGuard, VerifiedGuard } from './auth/auth.guard';
 import { AuthController } from './auth/auth.controller';
@@ -59,7 +58,6 @@ import { SendRemindersService } from './modules/cron/send-reminders.service';
     ActivityLogService,
     MailService,
     AuthService,
-    RegistrationService,
     TokenService,
     AuthGuard,
     VerifiedGuard,
